@@ -356,7 +356,7 @@
         }
     }
 
-    // REPARACIÓN COMPLETA PARA MÓVILES (Fijar scroll y simular pantalla grande)
+    // REPARACIÓN DEFINITIVA DE LAS TABLAS DE PRODUCTOS EN EL PDF
     function descargarPdfDiaSeleccionado() {
         if (!fechaFormateadaSeleccionada) return alert("Selecciona primero un día en el calendario.");
 
@@ -367,21 +367,23 @@
         const fechaBonita = fechaFormateadaSeleccionada.split('-').reverse().join('/');
         let totalGeneralDia = 0;
 
-        // Construcción limpia y estructurada
+        // Título general del PDF
         let pdfHtml = `
             <div style="font-family: Arial, sans-serif; padding: 25px; color: #000; background: #fff; width: 750px; margin: 0 auto;">
                 <h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 12px; font-size: 28px; letter-spacing: 1px;">REPORTE DIARIO DE REPARTO</h1>
                 <h3 style="text-align: center; margin-top: 0; margin-bottom: 35px; color: #444; font-size: 16px;">Fecha de Entrega: ${fechaBonita}</h3>
         `;
 
+        // Generación de bloques por cada tienda
         pedidosDelDia.forEach(p => {
             totalGeneralDia += p.total;
             let filasTabla = '';
             
+            // Construimos las filas de los productos de esta tienda concreta
             p.items.forEach(i => {
                 filasTabla += `
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #aaa; font-size: 14px;"><strong>${i.nombre}</strong></td>
+                        <td style="padding: 10px; border: 1px solid #aaa; font-size: 14px; text-align: left;"><strong>${i.nombre}</strong></td>
                         <td style="padding: 10px; border: 1px solid #aaa; text-align: center; font-size: 14px;">${i.cantidad}</td>
                         <td style="padding: 10px; border: 1px solid #aaa; text-align: center; font-size: 14px; color: #444;">${i.unidad}</td>
                         <td style="padding: 10px; border: 1px solid #aaa; text-align: right; font-size: 14px;">${i.precio.toFixed(2)} €</td>
@@ -390,6 +392,7 @@
                 `;
             });
 
+            // Ensamblamos la información del cliente con su respectiva tabla de productos
             pdfHtml += `
                 <div style="margin-bottom: 30px; background: #fff; page-break-inside: avoid; break-inside: avoid;">
                     <h2 style="margin-bottom: 5px; color: #8b0000; border-bottom: 2px solid #8b0000; padding-bottom: 5px; font-size: 20px;">🏪 Cliente: ${p.clienteNombre}</h2>
@@ -414,6 +417,7 @@
             `;
         });
 
+        // Añadimos el total general abajo del todo
         pdfHtml += `
                 <div style="text-align: right; margin-top: 40px; border-top: 4px double #000; padding-top: 15px;">
                     <span style="font-size: 24px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ${totalGeneralDia.toFixed(2)} €</span>
@@ -421,15 +425,15 @@
             </div>
         `;
 
-        // Creamos el nodo temporal y lo inyectamos directamente al cuerpo para que html2pdf lo renderice
+        // Crear nodo temporal oculto e inyectarlo en el documento
         const contenedorTemporal = document.createElement('div');
         contenedorTemporal.style.position = 'absolute';
-        contenedorTemporal.style.left = '-9999px'; // Lo dejamos oculto fuera de la pantalla
+        contenedorTemporal.style.left = '-9999px';
         contenedorTemporal.style.top = '0px';
         contenedorTemporal.innerHTML = pdfHtml;
         document.body.appendChild(contenedorTemporal);
 
-        // Forzamos los ajustes de captura ignorando el scroll de la ventana del móvil
+        // Opciones de configuración de captura fija
         const opciones = {
             margin:       10,
             filename:     `Reparto_Dia_${fechaFormateadaSeleccionada}.pdf`,
@@ -437,14 +441,14 @@
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true,
-                scrollY: 0,         // <-- EVITA EL CORTE SI EL MÓVIL TIENE SCROLL BAJADO
+                scrollY: 0,
                 scrollX: 0,
-                windowWidth: 1024   // <-- SIMULA UNA PANTALLA ANCHA PARA RECOGER TODO EL CONTENEDOR SIN CORTES LATERALES
+                windowWidth: 1024
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Genera y limpia el nodo de la memoria
+        // Renderizar, guardar y eliminar residuo de memoria
         html2pdf().from(contenedorTemporal).set(opciones).save().then(() => {
             document.body.removeChild(contenedorTemporal);
         });
