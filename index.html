@@ -18,13 +18,11 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            /* Carga tu imagen de carnes como fondo de la aplicación */
             background: url('./image_240d3e.jpg') no-repeat center center fixed;
             background-size: cover;
             color: var(--dark);
         }
         .overlay {
-            /* Capa oscura transparente para que las letras se lean perfectamente sobre la foto */
             background: rgba(0, 0, 0, 0.75);
             min-height: 100vh;
             padding: 20px;
@@ -118,7 +116,6 @@
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
         .product-info {
             font-weight: bold;
@@ -139,11 +136,22 @@
             color: #666;
             margin-bottom: 2px;
         }
+        .pedido-bloque {
+            background: #fff;
+            border: 1px solid #8b0000;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
         /* Plantilla oculta para el diseño del PDF */
         #pdf-template {
             padding: 30px;
             color: #000;
             background: white;
+        }
+        .pdf-cliente-section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
         }
     </style>
 </head>
@@ -152,14 +160,49 @@
 <div class="overlay">
     <header>
         <h1>🥩 Panel Comercial - Gestión de Carnes</h1>
-        <p>Organización rápida y tranquila para Papá</p>
     </header>
 
     <div class="container">
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('pedidos')">🛒 Nuevo Pedido</button>
+            <button class="tab-btn active" onclick="switchTab('pedidos')">🛒 Tomar Pedido</button>
+            <button class="tab-btn" onclick="switchTab('agenda')" onclick="cargarAgenda()">📅 Agenda/Días</button>
             <button class="tab-btn" onclick="switchTab('clientes')">👥 Clientes</button>
-            <button class="tab-btn" onclick="switchTab('productos')">📦 Catálogo/Precios</button>
+            <button class="tab-btn" onclick="switchTab('productos')">📦 Productos</button>
+        </div>
+
+        <div id="panel-pedidos" class="panel active">
+            <h3>🛒 Formulario de Pedido</h3>
+            <div class="form-group">
+                <label>Fecha de Entrega programada:</label>
+                <input type="date" id="ped-fecha">
+            </div>
+            <div class="form-group">
+                <label>Selecciona el Cliente:</label>
+                <select id="ped-cliente" onchange="actualizarDireccionPedido()">
+                    <option value="">-- Elegir Cliente --</option>
+                </select>
+            </div>
+            <p id="ped-direccion-muestra" style="font-style: italic; color: #b01a1a; font-weight: bold; margin-bottom: 20px;"></p>
+
+            <h4>Productos, Cantidades y Precios:</h4>
+            <div id="lista-productos-pedido"></div>
+
+            <button class="btn-submit" style="background: #27ae60; margin-top: 20px; padding: 16px;" onclick="guardarPedidoEnDispositivo()">💾 Guardar Pedido en Agenda</button>
+        </div>
+
+        <div id="panel-agenda" class="panel">
+            <h3>📅 Historial y Consultas por Fecha</h3>
+            <div class="form-group">
+                <label>Selecciona el día que deseas revisar:</label>
+                <input type="date" id="agenda-fecha-filtro" onchange="mostrarPedidosFecha()">
+            </div>
+
+            <div id="agenda-acciones" style="display:none; margin-bottom: 20px;">
+                <button class="btn-submit" style="background: #e67e22; padding: 15px;" onclick="generarPdfDelDia()">📄 Exportar Pedidos de este Día a PDF</button>
+            </div>
+
+            <div id="agenda-resultados">
+                </div>
         </div>
 
         <div id="panel-clientes" class="panel">
@@ -177,9 +220,7 @@
             <h3>Lista de Clientes Registrados</h3>
             <div style="overflow-x: auto;">
                 <table id="tabla-clientes">
-                    <thead>
-                        <tr><th>Cliente</th><th>Dirección</th></tr>
-                    </thead>
+                    <thead><tr><th>Cliente</th><th>Dirección</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -200,84 +241,41 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Precio Base por unidad/kg/caja (€):</label>
+                <label>Precio Base (€):</label>
                 <input type="number" id="prod-precio" step="0.01" placeholder="0.00">
             </div>
             <button class="btn-submit" onclick="guardarProducto()">💾 Guardar Producto</button>
 
-            <h3>Catálogo de Productos y Precios Base</h3>
+            <h3>Catálogo de Productos</h3>
             <div style="overflow-x: auto;">
                 <table id="tabla-productos">
-                    <thead>
-                        <tr><th>Producto</th><th>Formato de Venta</th><th>Precio Base</th></tr>
-                    </thead>
+                    <thead><tr><th>Producto</th><th>Formato de Venta</th><th>Precio Base</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
-        </div>
-
-        <div id="panel-pedidos" class="panel active">
-            <h3>🛒 Crear Pedido</h3>
-            <div class="form-group">
-                <label>Fecha del Pedido:</label>
-                <input type="date" id="ped-fecha">
-            </div>
-            <div class="form-group">
-                <label>Selecciona el Cliente:</label>
-                <select id="ped-cliente" onchange="actualizarDireccionPedido()">
-                    <option value="">-- Elegir Cliente --</option>
-                </select>
-            </div>
-            <p id="ped-direccion-muestra" style="font-style: italic; color: #b01a1a; font-weight: bold; margin-bottom: 20px;"></p>
-
-            <h4>Selecciona Productos, Cantidades y Edita Precios:</h4>
-            <div id="lista-productos-pedido">
-                </div>
-
-            <button class="btn-submit" style="background: #e67e22; margin-top: 20px; padding: 16px;" onclick="procesarYDescargarPDF()">📄 Generar Pedido y Descargar PDF</button>
         </div>
     </div>
 </div>
 
 <div id="pdf-template" style="display: none;">
-    <h2 style="color: #8b0000; text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 20px;">HOJA DE PEDIDO - COMERCIAL CÁRNICO</h2>
-    <table style="width: 100%; border: none; margin-bottom: 20px;">
-        <tr>
-            <td style="border: none; padding: 4px; width: 25%;"><strong>Fecha del Pedido:</strong></td>
-            <td style="border: none; padding: 4px;"><span id="pdf-fecha"></span></td>
-        </tr>
-        <tr>
-            <td style="border: none; padding: 4px;"><strong>Cliente:</strong></td>
-            <td style="border: none; padding: 4px;"><span id="pdf-cliente-nom"></span></td>
-        </tr>
-        <tr>
-            <td style="border: none; padding: 4px;"><strong>Dirección de Entrega:</strong></td>
-            <td style="border: none; padding: 4px;"><span id="pdf-cliente-dir"></span></td>
-        </tr>
-    </table>
+    <h2 style="color: #8b0000; text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 10px;">REPORTE DIARIO DE PEDIDOS</h2>
+    <h4 style="text-align: center; margin-top: 0; margin-bottom: 25px;">Fecha de Entrega: <span id="pdf-fecha-dia"></span></h4>
     
-    <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background: #f2f2f2;">
-                <th style="color: black; padding: 8px; border: 1px solid #ddd;">Producto</th>
-                <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: center;">Cantidad</th>
-                <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: center;">Formato/Unidad</th>
-                <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: right;">Precio Aplicado (€)</th>
-                <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: right;">Subtotal</th>
-            </tr>
-        </thead>
-        <tbody id="pdf-tabla-items"></tbody>
-    </table>
-    <h3 style="text-align: right; margin-top: 25px; font-size: 20px; border-top: 2px solid #222; padding-top: 10px;">Total Pedido: <span id="pdf-total">0.00</span>€</h3>
+    <div id="pdf-contenedor-clientes">
+        </div>
+    
+    <h2 style="text-align: right; margin-top: 30px; border-top: 3px double #222; padding-top: 10px; font-size: 22px;">TOTAL GENERAL DEL DÍA: <span id="pdf-total-dia">0.00</span>€</h2>
 </div>
 
 <script>
-    // Iniciar el almacenamiento en el dispositivo móvil si está limpio
+    // Iniciar bases de datos locales en el dispositivo móvil
     if (!localStorage.getItem('clientes')) localStorage.setItem('clientes', JSON.stringify([]));
     if (!localStorage.getItem('productos')) localStorage.setItem('productos', JSON.stringify([]));
+    if (!localStorage.getItem('historial_pedidos')) localStorage.setItem('historial_pedidos', JSON.stringify([]));
 
-    // Poner automáticamente el día de hoy en el selector de fecha
+    // Poner fecha de hoy por defecto en los calendarios
     document.getElementById('ped-fecha').valueAsDate = new Date();
+    document.getElementById('agenda-fecha-filtro').valueAsDate = new Date();
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -286,16 +284,15 @@
         event.target.classList.add('active');
         document.getElementById(`panel-${tabId}`).classList.add('active');
         
-        if(tabId === 'pedidos') {
-            cargarDatosEnPedido();
-        }
+        if(tabId === 'pedidos') cargarDatosEnPedido();
+        if(tabId === 'agenda') mostrarPedidosFecha();
     }
 
-    // --- SECCIÓN CLIENTES ---
+    // --- CLIENTES ---
     function guardarCliente() {
         const nombre = document.getElementById('cli-nombre').value.trim();
         const direccion = document.getElementById('cli-direccion').value.trim();
-        if(!nombre || !direccion) return alert('Por favor, introduce el nombre y la dirección del cliente.');
+        if(!nombre || !direccion) return alert('Por favor, introduce el nombre y dirección.');
 
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         clientes.push({ nombre, direccion });
@@ -304,7 +301,7 @@
         document.getElementById('cli-nombre').value = '';
         document.getElementById('cli-direccion').value = '';
         mostrarClientes();
-        alert('✅ Cliente guardado correctamente.');
+        alert('✅ Cliente guardado.');
     }
 
     function mostrarClientes() {
@@ -316,13 +313,13 @@
         });
     }
 
-    // --- SECCIÓN PRODUCTOS ---
+    // --- PRODUCTOS ---
     function guardarProducto() {
         const nombre = document.getElementById('prod-nombre').value.trim();
         const unidad = document.getElementById('prod-unidad').value;
         const precio = parseFloat(document.getElementById('prod-precio').value);
 
-        if(!nombre || isNaN(precio)) return alert('Por favor, rellena el nombre y el precio del producto.');
+        if(!nombre || isNaN(precio)) return alert('Por favor, rellena los datos del producto.');
 
         const productos = JSON.parse(localStorage.getItem('productos'));
         productos.push({ nombre, unidad, precio });
@@ -331,7 +328,7 @@
         document.getElementById('prod-nombre').value = '';
         document.getElementById('prod-precio').value = '';
         mostrarProductos();
-        alert('✅ Producto añadido al catálogo.');
+        alert('✅ Producto añadido.');
     }
 
     function mostrarProductos() {
@@ -343,41 +340,37 @@
         });
     }
 
-    // --- SECCIÓN PEDIDOS ---
+    // --- ENTRADA DE PEDIDOS ---
     function cargarDatosEnPedido() {
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const productos = JSON.parse(localStorage.getItem('productos'));
 
-        // Cargar clientes en el selector desplegable
         const selectCli = document.getElementById('ped-cliente');
         selectCli.innerHTML = '<option value="">-- Elegir Cliente --</option>';
         clientes.forEach((c, index) => {
             selectCli.innerHTML += `<option value="${index}">${c.nombre}</option>`;
         });
 
-        // Limpiar dirección previa
         document.getElementById('ped-direccion-muestra').innerText = "";
-
-        // Cargar listado de productos interactivos
         const listaProd = document.getElementById('lista-productos-pedido');
         listaProd.innerHTML = '';
         
         if(productos.length === 0) {
-            listaProd.innerHTML = '<p style="color:red; font-weight:bold; text-align:center;">⚠️ Primero añade productos en la pestaña "Productos".</p>';
+            listaProd.innerHTML = '<p style="color:red; font-weight:bold; text-align:center;">⚠️ Añade productos en la pestaña "Productos" primero.</p>';
             return;
         }
 
         productos.forEach((p, index) => {
             listaProd.innerHTML += `
                 <div class="product-row" data-index="${index}">
-                    <div class="product-info">${p.nombre} <span style="color:#777; font-size:14px;">(Se vende por: ${p.unidad})</span></div>
+                    <div class="product-info">${p.nombre} <span style="color:#777; font-size:14px;">(${p.unidad})</span></div>
                     <div class="product-inputs">
                         <div class="input-inline">
-                            <label>Cantidad a pedir:</label>
+                            <label>Cantidad:</label>
                             <input type="number" class="ped-cant" placeholder="0" min="0" value="0">
                         </div>
                         <div class="input-inline">
-                            <label>Precio Especial (€):</label>
+                            <label>Precio (€):</label>
                             <input type="number" class="ped-prec-edit" value="${p.precio.toFixed(2)}" step="0.01">
                         </div>
                     </div>
@@ -389,83 +382,165 @@
     function actualizarDireccionPedido() {
         const idx = document.getElementById('ped-cliente').value;
         const pDireccion = document.getElementById('ped-direccion-muestra');
-        if(idx === "") {
-            pDireccion.innerText = "";
-            return;
-        }
+        if(idx === "") { pDireccion.innerText = ""; return; }
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         pDireccion.innerText = "📍 Dirección: " + clientes[idx].direccion;
     }
 
-    // --- EXPORTACIÓN AUTOMÁTICA A PDF ---
-    function procesarYDescargarPDF() {
+    function guardarPedidoEnDispositivo() {
         const fecha = document.getElementById('ped-fecha').value;
         const cliIdx = document.getElementById('ped-cliente').value;
-        
-        if(cliIdx === "") return alert("❌ Por favor, selecciona un cliente primero.");
+        if(cliIdx === "" || !fecha) return alert("❌ Selecciona fecha y cliente.");
 
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const productos = JSON.parse(localStorage.getItem('productos'));
         const clienteSel = clientes[cliIdx];
 
-        // Volcar encabezados al documento PDF limpio
-        document.getElementById('pdf-fecha').innerText = fecha.split('-').reverse().join('/');
-        document.getElementById('pdf-cliente-nom').innerText = clienteSel.nombre;
-        document.getElementById('pdf-cliente-dir').innerText = clienteSel.direccion;
+        let itemsPedido = [];
+        let totalPedido = 0;
 
-        const tablaItems = document.getElementById('pdf-tabla-items');
-        tablaItems.innerHTML = '';
-        let granTotal = 0;
-        let tieneItems = false;
-
-        // Leer los datos introducidos en la lista de pedidos
         const filas = document.querySelectorAll('.product-row');
         filas.forEach(f => {
             const idx = f.getAttribute('data-index');
             const cant = parseFloat(f.querySelector('.ped-cant').value);
-            const precioModificado = parseFloat(f.querySelector('.ped-prec-edit').value);
+            const precioEspecial = parseFloat(f.querySelector('.ped-prec-edit').value);
             const prod = productos[idx];
 
             if(cant > 0 && !isNaN(cant)) {
-                tieneItems = true;
-                const subtotal = cant * precioModificado;
-                granTotal += subtotal;
-
-                // Añade la fila al PDF reflejando la cantidad, la unidad elegida y el precio modificado
-                tablaItems.innerHTML += `
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${prod.nombre}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align:center;">${cant}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align:center;">${prod.unidad}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align:right;">${precioModificado.toFixed(2)} €</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align:right;">${subtotal.toFixed(2)} €</td>
-                    </tr>
-                `;
+                const subtotal = cant * precioEspecial;
+                totalPedido += subtotal;
+                itemsPedido.push({
+                    nombre: prod.nombre,
+                    unidad: prod.unidad,
+                    cantidad: cant,
+                    precio: precioEspecial,
+                    subtotal: subtotal
+                });
             }
         });
 
-        if(!tieneItems) return alert("⚠️ Introduce una cantidad mayor a 0 en al menos un producto antes de generar el PDF.");
+        if(itemsPedido.length === 0) return alert("⚠️ No has puesto cantidad en ningún producto.");
 
-        document.getElementById('pdf-total').innerText = granTotal.toFixed(2);
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        historial.push({
+            fecha: fecha,
+            clienteNombre: clienteSel.nombre,
+            clienteDireccion: clienteSel.direccion,
+            items: itemsPedido,
+            total: totalPedido
+        });
+        localStorage.setItem('historial_pedidos', JSON.stringify(historial));
 
-        // Generar archivo PDF utilizando la plantilla interna
+        alert("✅ Pedido guardado en el calendario de forma segura.");
+        cargarDatosEnPedido(); // Resetear formulario
+    }
+
+    // --- AGENDA & FILTRADO POR CALENDARIO ---
+    function mostrarPedidosFecha() {
+        const fechaFiltro = document.getElementById('agenda-fecha-filtro').value;
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        const contenedor = document.getElementById('agenda-resultados');
+        const barraAcciones = document.getElementById('agenda-acciones');
+
+        const pedidosDelDia = historial.filter(p => p.fecha === fechaFiltro);
+        contenedor.innerHTML = '';
+
+        if(pedidosDelDia.length === 0) {
+            barraAcciones.style.display = 'none';
+            contenedor.innerHTML = `<p style="text-align:center; color:#777; font-weight:bold; margin-top:20px;">📅 No hay ningún pedido agendado para este día.</p>`;
+            return;
+        }
+
+        barraAcciones.style.display = 'block';
+
+        pedidosDelDia.forEach(p => {
+            let tablaArticulos = '';
+            p.items.forEach(i => {
+                tablaArticulos += `<li>${i.cantidad} ${i.unidad} - <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€ (Subtotal: ${i.subtotal.toFixed(2)}€)</li>`;
+            });
+
+            contenedor.innerHTML += `
+                <div class="pedido-bloque">
+                    <h4>🏪 ${p.clienteNombre}</h4>
+                    <p style="margin: 4px 0; font-size:14px; color:#555;">📍 Dirección: ${p.clienteDireccion}</p>
+                    <ul style="padding-left:20px; margin:10px 0;">${tablaArticulos}</ul>
+                    <p style="text-align:right; margin:0; font-weight:bold; color:var(--primary);">Total Cliente: ${p.total.toFixed(2)}€</p>
+                </div>
+            `;
+        });
+    }
+
+    // --- GENERAR UN SOLO PDF CON TODO EL DÍA COMBINADO ---
+    function generarPdfDelDia() {
+        const fechaFiltro = document.getElementById('agenda-fecha-filtro').value;
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        const pedidosDelDia = historial.filter(p => p.fecha === fechaFiltro);
+
+        if(pedidosDelDia.length === 0) return;
+
+        document.getElementById('pdf-fecha-dia').innerText = fechaFiltro.split('-').reverse().join('/');
+        const contenedorPdf = document.getElementById('pdf-contenedor-clientes');
+        contenedorPdf.innerHTML = '';
+        
+        let totalGeneralDia = 0;
+
+        pedidosDelDia.forEach(p => {
+            totalGeneralDia += p.total;
+            let filasTabla = '';
+            
+            p.items.forEach(i => {
+                filasTabla += `
+                    <tr>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${i.nombre}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd; text-align:center;">${i.cantidad}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd; text-align:center;">${i.unidad}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd; text-align:right;">${i.precio.toFixed(2)} €</td>
+                        <td style="padding: 6px; border: 1px solid #ddd; text-align:right;">${i.subtotal.toFixed(2)} €</td>
+                    </tr>
+                `;
+            });
+
+            contenedorPdf.innerHTML += `
+                <div class="pdf-cliente-section">
+                    <h3 style="margin-bottom:5px; color:#8b0000; border-bottom:1px solid #ccc; padding-bottom:3px;">🏪 Cliente: ${p.clienteNombre}</h3>
+                    <p style="margin:0 0 10px 0; font-size:12px; color:#444;">📍 Dirección de Entrega: ${p.clienteDireccion}</p>
+                    <table style="width: 100%; border-collapse: collapse; font-size:13px;">
+                        <thead>
+                            <tr style="background: #f9f9f9;">
+                                <th style="color:black; padding: 6px; border: 1px solid #ddd;">Producto</th>
+                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:center;">Cant.</th>
+                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:center;">Formato</th>
+                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:right;">Precio</th>
+                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filasTabla}</tbody>
+                    </table>
+                    <p style="text-align:right; font-weight:bold; margin-top:8px; margin-bottom:0;">Total de este Cliente: ${p.total.toFixed(2)}€</p>
+                </div>
+            `;
+        });
+
+        document.getElementById('pdf-total-dia').innerText = totalGeneralDia.toFixed(2);
+
+        // Disparar la descarga del PDF unificado
         const elementoPDF = document.getElementById('pdf-template');
-        elementoPDF.style.display = 'block'; 
+        elementoPDF.style.display = 'block';
 
         const opciones = {
             margin:       12,
-            filename:     `Pedido_${clienteSel.nombre.replace(/[^a-zA-Z0-9]/g, "_")}_${fecha}.pdf`,
+            filename:     `Pedidos_Dia_${fechaFiltro}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2 },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         html2pdf().from(elementoPDF).set(opciones).save().then(() => {
-            elementoPDF.style.display = 'none'; 
+            elementoPDF.style.display = 'none';
         });
     }
 
-    // Cargar listas iniciales
+    // Inicializaciones básicas
     mostrarClientes();
     mostrarProductos();
     cargarDatosEnPedido();
