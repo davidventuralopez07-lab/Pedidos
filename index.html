@@ -18,7 +18,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            /* Aquí está tu imagen de carnes como fondo de la aplicación */
+            /* Carga tu imagen de carnes como fondo de la aplicación */
             background: url('./image_240d3e.jpg') no-repeat center center fixed;
             background-size: cover;
             color: var(--dark);
@@ -159,7 +159,7 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('pedidos')">🛒 Nuevo Pedido</button>
             <button class="tab-btn" onclick="switchTab('clientes')">👥 Clientes</button>
-            <button class="tab-btn" onclick="switchTab('productos')">📦 Productos</button>
+            <button class="tab-btn" onclick="switchTab('productos')">📦 Catálogo/Precios</button>
         </div>
 
         <div id="panel-clientes" class="panel">
@@ -192,7 +192,7 @@
                 <input type="text" id="prod-nombre" placeholder="Ej: Costillar de Cerdo">
             </div>
             <div class="form-group">
-                <label>Unidad de Venta:</label>
+                <label>¿Cómo se vende este producto?:</label>
                 <select id="prod-unidad">
                     <option value="Kilos">Kilos (kg)</option>
                     <option value="Cajas">Cajas</option>
@@ -200,16 +200,16 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Precio Base (€):</label>
+                <label>Precio Base por unidad/kg/caja (€):</label>
                 <input type="number" id="prod-precio" step="0.01" placeholder="0.00">
             </div>
             <button class="btn-submit" onclick="guardarProducto()">💾 Guardar Producto</button>
 
-            <h3>Catálogo de Productos</h3>
+            <h3>Catálogo de Productos y Precios Base</h3>
             <div style="overflow-x: auto;">
                 <table id="tabla-productos">
                     <thead>
-                        <tr><th>Producto</th><th>Formato</th><th>Precio Base</th></tr>
+                        <tr><th>Producto</th><th>Formato de Venta</th><th>Precio Base</th></tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -230,7 +230,7 @@
             </div>
             <p id="ped-direccion-muestra" style="font-style: italic; color: #b01a1a; font-weight: bold; margin-bottom: 20px;"></p>
 
-            <h4>Productos a incluir en el pedido:</h4>
+            <h4>Selecciona Productos, Cantidades y Edita Precios:</h4>
             <div id="lista-productos-pedido">
                 </div>
 
@@ -243,7 +243,7 @@
     <h2 style="color: #8b0000; text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 20px;">HOJA DE PEDIDO - COMERCIAL CÁRNICO</h2>
     <table style="width: 100%; border: none; margin-bottom: 20px;">
         <tr>
-            <td style="border: none; padding: 4px;"><strong>Fecha del Pedido:</strong></td>
+            <td style="border: none; padding: 4px; width: 25%;"><strong>Fecha del Pedido:</strong></td>
             <td style="border: none; padding: 4px;"><span id="pdf-fecha"></span></td>
         </tr>
         <tr>
@@ -260,9 +260,9 @@
         <thead>
             <tr style="background: #f2f2f2;">
                 <th style="color: black; padding: 8px; border: 1px solid #ddd;">Producto</th>
-                <th style="color: black; padding: 8px; border: 1px solid #ddd;">Formato</th>
                 <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: center;">Cantidad</th>
-                <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: right;">Precio (€)</th>
+                <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: center;">Formato/Unidad</th>
+                <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: right;">Precio Aplicado (€)</th>
                 <th style="color: black; padding: 8px; border: 1px solid #ddd; text-align: right;">Subtotal</th>
             </tr>
         </thead>
@@ -272,7 +272,7 @@
 </div>
 
 <script>
-    // Iniciar el almacenamiento en el dispositivo si está limpio
+    // Iniciar el almacenamiento en el dispositivo móvil si está limpio
     if (!localStorage.getItem('clientes')) localStorage.setItem('clientes', JSON.stringify([]));
     if (!localStorage.getItem('productos')) localStorage.setItem('productos', JSON.stringify([]));
 
@@ -370,14 +370,14 @@
         productos.forEach((p, index) => {
             listaProd.innerHTML += `
                 <div class="product-row" data-index="${index}">
-                    <div class="product-info">${p.nombre} <span style="color:#777; font-size:14px;">(${p.unidad})</span></div>
+                    <div class="product-info">${p.nombre} <span style="color:#777; font-size:14px;">(Se vende por: ${p.unidad})</span></div>
                     <div class="product-inputs">
                         <div class="input-inline">
-                            <label>Cantidad:</label>
+                            <label>Cantidad a pedir:</label>
                             <input type="number" class="ped-cant" placeholder="0" min="0" value="0">
                         </div>
                         <div class="input-inline">
-                            <label>Precio (€/Unidad):</label>
+                            <label>Precio Especial (€):</label>
                             <input type="number" class="ped-prec-edit" value="${p.precio.toFixed(2)}" step="0.01">
                         </div>
                     </div>
@@ -408,8 +408,7 @@
         const productos = JSON.parse(localStorage.getItem('productos'));
         const clienteSel = clientes[cliIdx];
 
-        // Volcar encabezados al documento PDF
-        // Cambiar formato de fecha visualmente si se desea
+        // Volcar encabezados al documento PDF limpio
         document.getElementById('pdf-fecha').innerText = fecha.split('-').reverse().join('/');
         document.getElementById('pdf-cliente-nom').innerText = clienteSel.nombre;
         document.getElementById('pdf-cliente-dir').innerText = clienteSel.direccion;
@@ -419,7 +418,7 @@
         let granTotal = 0;
         let tieneItems = false;
 
-        // Leer los datos que introdujo papá en la lista
+        // Leer los datos introducidos en la lista de pedidos
         const filas = document.querySelectorAll('.product-row');
         filas.forEach(f => {
             const idx = f.getAttribute('data-index');
@@ -432,11 +431,12 @@
                 const subtotal = cant * precioModificado;
                 granTotal += subtotal;
 
+                // Añade la fila al PDF reflejando la cantidad, la unidad elegida y el precio modificado
                 tablaItems.innerHTML += `
                     <tr>
                         <td style="padding: 8px; border: 1px solid #ddd;">${prod.nombre}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${prod.unidad}</td>
                         <td style="padding: 8px; border: 1px solid #ddd; text-align:center;">${cant}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align:center;">${prod.unidad}</td>
                         <td style="padding: 8px; border: 1px solid #ddd; text-align:right;">${precioModificado.toFixed(2)} €</td>
                         <td style="padding: 8px; border: 1px solid #ddd; text-align:right;">${subtotal.toFixed(2)} €</td>
                     </tr>
@@ -444,11 +444,11 @@
             }
         });
 
-        if(!tieneItems) return alert("⚠️ Introduce una cantidad para al menos un producto antes de generar el PDF.");
+        if(!tieneItems) return alert("⚠️ Introduce una cantidad mayor a 0 en al menos un producto antes de generar el PDF.");
 
         document.getElementById('pdf-total').innerText = granTotal.toFixed(2);
 
-        // Generar archivo PDF utilizando la pantalla oculta
+        // Generar archivo PDF utilizando la plantilla interna
         const elementoPDF = document.getElementById('pdf-template');
         elementoPDF.style.display = 'block'; 
 
