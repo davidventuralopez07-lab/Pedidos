@@ -239,6 +239,18 @@
             margin-bottom: 25px;
             page-break-inside: avoid;
         }
+        /* Estilos específicos para la fila de pedidos del día */
+        .pedido-dia-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .pedido-dia-item .btn-delete {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -377,7 +389,6 @@
     let fechaCalendarioActual = new Date();
     let fechaFormateadaSeleccionada = "";
 
-    // CORRECCIÓN CLAVE: Al cambiar de pestaña, ejecutamos la función que refresca las listas
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
@@ -385,7 +396,6 @@
         if(event && event.target) {
             event.target.classList.add('active');
         } else {
-            // Buscar por texto si falla el evento directo
             const botones = document.querySelectorAll('.tab-btn');
             botones.forEach(b => {
                 if(b.getAttribute('onclick').includes(tabId)) b.classList.add('active');
@@ -400,7 +410,7 @@
         if(tabId === 'productos') mostrarProductos();
     }
 
-    // --- LOGICA DE CLIENTES ---
+    // --- LÓGICA DE CLIENTES ---
     function guardarCliente() {
         const nombre = document.getElementById('cli-nombre').value.trim();
         const direccion = document.getElementById('cli-direccion').value.trim();
@@ -511,7 +521,7 @@
         }
     }
 
-    // --- FORMULARIO PEDIDOS Y AGERGAR A CALENDARIO ---
+    // --- FORMULARIO PEDIDOS Y AGREGAR A CALENDARIO ---
     function cargarDatosEnPedido() {
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const productos = JSON.parse(localStorage.getItem('productos'));
@@ -594,6 +604,7 @@
 
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         historial.push({
+            id: Date.now() + Math.random().toString(36).substr(2, 5), // ID único para poder eliminarlo después
             fecha: fecha,
             clienteNombre: clienteSel.nombre,
             clienteDireccion: clienteSel.direccion,
@@ -669,6 +680,11 @@
         const elementoDia = document.getElementById(`cal-day-${numeroDia}`);
         if(elementoDia) elementoDia.classList.add('selected');
 
+        refrescarListaPedidosDia(fechaString, numeroDia);
+    }
+
+    // NUEVA FUNCIÓN: Pinta y actualiza la lista del día seleccionado con la cruz de borrar
+    function refrescarListaPedidosDia(fechaString, numeroDia) {
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         const pedidosDelDia = historial.filter(p => p.fecha === fechaString);
 
@@ -687,15 +703,41 @@
                 p.items.forEach(i => {
                     itemsList += `<li>${i.cantidad} ${i.unidad} de <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€</li>`;
                 });
+                // Añadimos el botón de eliminar (❌) a cada pedido individual del día
                 listaPedidosHtml.innerHTML += `
-                    <div style="border-bottom:1px solid #eee; padding:10px 0;">
-                        <strong>🏪 ${p.clienteNombre}</strong> (${p.total.toFixed(2)}€)
-                        <ul style="margin:5px 0 0 15px; padding:0; font-size:14px; color:#444;">${itemsList}</ul>
+                    <div class="pedido-dia-item">
+                        <div>
+                            <strong>🏪 ${p.clienteNombre}</strong> (${p.total.toFixed(2)}€)
+                            <ul style="margin:5px 0 0 15px; padding:0; font-size:14px; color:#444;">${itemsList}</ul>
+                        </div>
+                        <div>
+                            <button class="btn-action btn-delete" onclick="eliminarPedidoDelCalendario('${p.id}', '${fechaString}', ${numeroDia})">❌</button>
+                        </div>
                     </div>
                 `;
             });
         }
         infoBox.style.display = 'block';
+    }
+
+    // NUEVA FUNCIÓN: Borra el pedido por su ID único, recarga el día y redibuja los badges del calendario
+    function eliminarPedidoDelCalendario(idPedido, fechaString, numeroDia) {
+        if(confirm("¿Seguro que quieres eliminar este pedido del calendario?")) {
+            let historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+            
+            // Si el pedido no tiene id (de versiones anteriores), lo buscamos por fecha, pero con el ID es exacto
+            historial = historial.filter(p => p.id !== idPedido);
+            
+            localStorage.setItem('historial_pedidos', JSON.stringify(historial));
+            
+            // Actualizamos la vista sin perder el día seleccionado
+            renderizarCalendarioVisual();
+            refrescarListaPedidosDia(fechaString, numeroDia);
+            
+            // Volver a marcar como seleccionado visualmente el día
+            const elementoDia = document.getElementById(`cal-day-${numeroDia}`);
+            if(elementoDia) elementoDia.classList.add('selected');
+        }
     }
 
     function descargarPdfDiaSeleccionado() {
