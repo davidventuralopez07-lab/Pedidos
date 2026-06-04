@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meat-orders-cache-v1';
+const CACHE_NAME = 'meat-orders-cache-v2';
 const ASSETS = [
   'index.html',
   'manifest.json',
