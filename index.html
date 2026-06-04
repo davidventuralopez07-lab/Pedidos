@@ -1,37 +1,81 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Gestor Cárnico</title>
-    <style>
-        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
-        .box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        input, textarea, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #8b0000; color: white; border: none; cursor: pointer; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<div class="box">
-    <h2>Gestor Comercial</h2>
-    <h3>📦 Importar Productos</h3>
-    <textarea id="lista" rows="6" placeholder="Formato: Nombre,Formato,Precio,Peso&#10;Ej: Longanizas,Cajas,5.50,2"></textarea>
-    <button onclick="guardar()">Cargar Productos</button>
-    <p id="msg"></p>
-    <button style="background:#27ae60" onclick="window.print()">🖨️ Imprimir Hoja</button>
-</div>
-
 <script>
-    function guardar() {
-        const texto = document.getElementById('lista').value;
-        if(!texto) return alert("Pega los datos primero");
-        localStorage.setItem('productos_carnico', texto);
-        document.getElementById('msg').innerText = "✅ Productos guardados en la memoria del móvil.";
+    // ... (Mantén las variables iniciales igual) ...
+
+    // --- LÓGICA DE PEDIDOS: PRECIO ÚNICO POR PRODUCTO ---
+    function guardarPedidoEnCalendario() {
+        const fecha = document.getElementById('ped-fecha').value;
+        const cliIdx = document.getElementById('ped-cliente').value;
+        if(cliIdx === "" || !fecha) return alert("Selecciona fecha y cliente.");
+        
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        const clienteSel = clientes[cliIdx];
+        
+        let itemsPedido = [];
+        let totalPedido = 0;
+
+        document.querySelectorAll('.product-row').forEach(f => {
+            const idx = f.getAttribute('data-index');
+            const cant = parseFloat(f.querySelector('.ped-cant').value);
+            
+            // LÓGICA: El precio se coge siempre del catálogo (precio base)
+            const precioBase = productos[idx].precio; 
+            
+            if(cant > 0) {
+                const sub = cant * precioBase;
+                totalPedido += sub;
+                itemsPedido.push({ 
+                    nombre: productos[idx].nombre, 
+                    unit: productos[idx].unidad, 
+                    cantidad: cant, 
+                    precio: precioBase, // Se usa el precio base configurado
+                    subtotal: sub 
+                });
+            }
+        });
+
+        if(itemsPedido.length === 0) return alert("Por favor, introduce al menos una cantidad.");
+        
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        historial.push({ 
+            fecha: fecha, 
+            clienteNombre: clienteSel.nombre, 
+            clienteDireccion: clienteSel.direccion, 
+            items: itemsPedido, 
+            total: totalPedido 
+        });
+        
+        localStorage.setItem('historial_pedidos', JSON.stringify(historial));
+        alert("Pedido guardado con éxito.");
+        cargarDatosEnPedido();
     }
-    
-    // Al cargar la página, recuperamos
-    const guardado = localStorage.getItem('productos_carnico');
-    if(guardado) document.getElementById('lista').value = guardado;
+
+    // --- ACTUALIZACIÓN DE IMPORTACIÓN PARA PRODUCTOS ---
+    function procesarImportacionProductos() {
+        const texto = document.getElementById('txt-import-productos').value.trim();
+        if(!texto) return alert("Pega algo primero.");
+        const lineas = texto.split('\n');
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        let cont = 0;
+        lineas.forEach(l => {
+            const partes = l.split(',');
+            if(partes.length >= 3) {
+                const precioNum = parseFloat(partes[2].trim());
+                // Importamos manteniendo la unidad (Kilos/Cajas/Uds) pero asumiendo que el precio es por la unidad de referencia
+                productos.push({ 
+                    nombre: partes[0].trim(), 
+                    unidad: partes[1].trim(), 
+                    precio: isNaN(precioNum) ? 0 : precioNum 
+                });
+                cont++;
+            }
+        });
+        localStorage.setItem('productos', JSON.stringify(productos));
+        document.getElementById('txt-import-productos').value = '';
+        toggleImportBox('import-productos');
+        mostrarProductos();
+        alert("Importados " + cont + " productos. El precio configurado se aplicará a todas las ventas de este producto.");
+    }
+
+    // ... (El resto de funciones como mostrarClientes, mostrarProductos, etc., se quedan igual) ...
 </script>
-</body>
-</html>
