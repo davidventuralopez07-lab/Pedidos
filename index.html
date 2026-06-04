@@ -1,7 +1,31 @@
 <script>
-    // ... (Mantén las variables iniciales igual) ...
+    // --- IMPORTACIÓN Y GUARDADO DE PRODUCTOS ---
+    function procesarImportacionProductos() {
+        const texto = document.getElementById('txt-import-productos').value.trim();
+        if(!texto) return alert("Pega algo primero.");
+        const lineas = texto.split('\n');
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        let cont = 0;
+        lineas.forEach(l => {
+            const partes = l.split(',');
+            // Formato ahora: Nombre, Unidad, Precio, PesoPorUnidad
+            if(partes.length >= 4) {
+                productos.push({ 
+                    nombre: partes[0].trim(), 
+                    unidad: partes[1].trim(), 
+                    precio: parseFloat(partes[2].trim()),
+                    pesoPorUnidad: parseFloat(partes[3].trim()) // NUEVO: Peso en Kg por cada unidad/caja
+                });
+                cont++;
+            }
+        });
+        localStorage.setItem('productos', JSON.stringify(productos));
+        toggleImportBox('import-productos');
+        mostrarProductos();
+        alert("Importados " + cont + " productos con su peso definido.");
+    }
 
-    // --- LÓGICA DE PEDIDOS: PRECIO ÚNICO POR PRODUCTO ---
+    // --- CÁLCULO DEL PEDIDO ---
     function guardarPedidoEnCalendario() {
         const fecha = document.getElementById('ped-fecha').value;
         const cliIdx = document.getElementById('ped-cliente').value;
@@ -16,66 +40,35 @@
 
         document.querySelectorAll('.product-row').forEach(f => {
             const idx = f.getAttribute('data-index');
-            const cant = parseFloat(f.querySelector('.ped-cant').value);
+            const prod = productos[idx];
+            const cantidad = parseFloat(f.querySelector('.ped-cant').value);
             
-            // LÓGICA: El precio se coge siempre del catálogo (precio base)
-            const precioBase = productos[idx].precio; 
-            
-            if(cant > 0) {
-                const sub = cant * precioBase;
-                totalPedido += sub;
+            if(cantidad > 0) {
+                // LÓGICA DE PESO:
+                // Si la unidad es "Kilos", peso = 1. Si es "Cajas/Uds", usamos el peso que definiste.
+                const pesoTotal = (prod.unidad === "Kilos") ? cantidad : (cantidad * prod.pesoPorUnidad);
+                const subtotal = pesoTotal * prod.precio;
+                
+                totalPedido += subtotal;
                 itemsPedido.push({ 
-                    nombre: productos[idx].nombre, 
-                    unit: productos[idx].unidad, 
-                    cantidad: cant, 
-                    precio: precioBase, // Se usa el precio base configurado
-                    subtotal: sub 
+                    nombre: prod.nombre, 
+                    unit: prod.unidad, 
+                    cantidad: cantidad, 
+                    precioUnitario: prod.precio, // Precio por kilo
+                    pesoTotalCalculado: pesoTotal,
+                    subtotal: subtotal 
                 });
             }
         });
-
-        if(itemsPedido.length === 0) return alert("Por favor, introduce al menos una cantidad.");
         
-        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
-        historial.push({ 
-            fecha: fecha, 
-            clienteNombre: clienteSel.nombre, 
-            clienteDireccion: clienteSel.direccion, 
-            items: itemsPedido, 
-            total: totalPedido 
-        });
-        
-        localStorage.setItem('historial_pedidos', JSON.stringify(historial));
-        alert("Pedido guardado con éxito.");
-        cargarDatosEnPedido();
+        // ... (resto del guardado igual)
     }
 
-    // --- ACTUALIZACIÓN DE IMPORTACIÓN PARA PRODUCTOS ---
-    function procesarImportacionProductos() {
-        const texto = document.getElementById('txt-import-productos').value.trim();
-        if(!texto) return alert("Pega algo primero.");
-        const lineas = texto.split('\n');
-        const productos = JSON.parse(localStorage.getItem('productos'));
-        let cont = 0;
-        lineas.forEach(l => {
-            const partes = l.split(',');
-            if(partes.length >= 3) {
-                const precioNum = parseFloat(partes[2].trim());
-                // Importamos manteniendo la unidad (Kilos/Cajas/Uds) pero asumiendo que el precio es por la unidad de referencia
-                productos.push({ 
-                    nombre: partes[0].trim(), 
-                    unidad: partes[1].trim(), 
-                    precio: isNaN(precioNum) ? 0 : precioNum 
-                });
-                cont++;
-            }
-        });
-        localStorage.setItem('productos', JSON.stringify(productos));
-        document.getElementById('txt-import-productos').value = '';
-        toggleImportBox('import-productos');
-        mostrarProductos();
-        alert("Importados " + cont + " productos. El precio configurado se aplicará a todas las ventas de este producto.");
-    }
-
-    // ... (El resto de funciones como mostrarClientes, mostrarProductos, etc., se quedan igual) ...
+    // --- EN EL PDF (generarImpresionNativa) ---
+    // En la parte donde recorres los items para el HTML del PDF, cámbialo así:
+    /*
+    p.items.forEach(i => {
+        lineasProductos += '... <span>[ ] ' + i.cantidad + ' ' + i.unit + ' (' + i.pesoTotalCalculado + ' kg) ' + i.nombre + '...</span>';
+    });
+    */
 </script>
