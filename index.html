@@ -41,10 +41,7 @@
         .badge-pedidos { background: #27ae60; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-top: 3px; }
         .day-btn-nav { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .dia-info-box { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-top: 20px; }
-        #pdf-template { padding: 30px; color: #000; background: white; }
-        .pdf-cliente-section { margin-bottom: 25px; page-break-inside: avoid; }
         
-        /* ESTO SÍ O SÍ FORMATEA LA FILA ABAJO */
         .pedido-dia-item {
             display: flex !important;
             justify-content: space-between !important;
@@ -150,13 +147,6 @@
     </div>
 </div>
 
-<div id="pdf-template" style="display: none;">
-    <h2 style="color: #8b0000; text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px;">REPORTE DIARIO DE PEDIDOS</h2>
-    <h4 style="text-align: center;">Fecha de Entrega: <span id="pdf-fecha-dia"></span></h4>
-    <div id="pdf-contenedor-clientes"></div>
-    <h2 style="text-align: right; margin-top: 30px; border-top: 3px double #222; padding-top: 10px;">TOTAL GENERAL DÍA: <span id="pdf-total-dia">0.00</span>€</h2>
-</div>
-
 <script>
     if (!localStorage.getItem('clientes')) localStorage.setItem('clientes', JSON.stringify([]));
     if (!localStorage.getItem('productos')) localStorage.setItem('productos', JSON.stringify([]));
@@ -169,10 +159,8 @@
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
-        
         document.getElementById(`btn-tab-${tabId}`).classList.add('active');
         document.getElementById(`panel-${tabId}`).classList.add('active');
-        
         if(tabId === 'pedidos') cargarDatosEnPedido();
         if(tabId === 'calendario') renderizarCalendarioVisual();
         if(tabId === 'clientes') mostrarClientes();
@@ -327,7 +315,6 @@
         refrescarListaPedidosDia(fStr, numDia);
     }
 
-    // EL ALGORITMO QUE PINTA LAS TIENDAS Y LA CRUZ ROJA (❌)
     function refrescarListaPedidosDia(fStr, numDia) {
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         const pedidosDelDia = historial.filter(p => p.fecha === fStr);
@@ -342,7 +329,6 @@
                 let itemsList = '';
                 p.items.forEach(i => { itemsList += `<li>${i.cantidad} ${i.unidad} de <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€</li>`; });
                 
-                // AQUÍ SE GENERA EL CONTENEDOR CON LA CRUZ ROJA DIRECTA
                 lista.innerHTML += `
                     <div class="pedido-dia-item">
                         <div class="pedido-dia-info">
@@ -370,24 +356,85 @@
         }
     }
 
+    // NUEVA FUNCIÓN MEJORADA: Genera el PDF perfectamente estructurado
     function descargarPdfDiaSeleccionado() {
+        if (!fechaFormateadaSeleccionada) return alert("Selecciona primero un día en el calendario.");
+
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         const pedidosDelDia = historial.filter(p => p.fecha === fechaFormateadaSeleccionada);
-        if(pedidosDelDia.length === 0) return;
-        document.getElementById('pdf-fecha-dia').innerText = fechaFormateadaSeleccionada.split('-').reverse().join('/');
-        const cont = document.getElementById('pdf-contenedor-clientes');
-        cont.innerHTML = '';
-        let tot = 0;
+        if(pedidosDelDia.length === 0) return alert("No hay pedidos guardados en este día.");
+
+        const fechaBonita = fechaFormateadaSeleccionada.split('-').reverse().join('/');
+        let totalGeneralDia = 0;
+
+        // Construimos el HTML del reporte de manera directa y forzada con estilos nativos
+        let pdfHtml = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff;">
+                <h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 10px; font-size: 26px;">REPORTE DIARIO DE REPARTO</h1>
+                <h3 style="text-align: center; margin-top: 0; margin-bottom: 30px; color: #555;">Fecha de Entrega: ${fechaBonita}</h3>
+        `;
+
         pedidosDelDia.forEach(p => {
-            tot += p.total;
-            let filas = '';
-            p.items.forEach(i => { filas += `<tr><td style="padding:8px;border:1px solid #ddd;">${i.nombre}</td><td style="padding:8px;border:1px solid #ddd;text-align:center;">${i.cantidad}</td><td style="padding:8px;border:1px solid #ddd;text-align:center;">${i.unidad}</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${i.precio.toFixed(2)} €</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${i.subtotal.toFixed(2)} €</td></tr>`; });
-            cont.innerHTML += `<div class="pdf-cliente-section"><h3>🏪 Cliente: ${p.clienteNombre}</h3><p>📍 Dirección: ${p.clienteDireccion}</p><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f9f9f9;"><th style="padding:8px;border:1px solid #ddd;">Producto</th><th style="padding:8px;border:1px solid #ddd;text-align:center;">Cant.</th><th style="padding:8px;border:1px solid #ddd;text-align:center;">Formato</th><th style="padding:8px;border:1px solid #ddd;text-align:right;">Precio</th><th style="padding:8px;border:1px solid #ddd;text-align:right;">Subtotal</th></tr></thead><tbody>${filas}</tbody></table><p style="text-align:right;font-weight:bold;">Total: ${p.total.toFixed(2)}€</p></div>`;
+            totalGeneralDia += p.total;
+            let filasTabla = '';
+            
+            p.items.forEach(i => {
+                filasTabla += `
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #bbb; font-size: 14px;"><strong>${i.nombre}</strong></td>
+                        <td style="padding: 10px; border: 1px solid #bbb; text-align: center; font-size: 14px;">${i.cantidad}</td>
+                        <td style="padding: 10px; border: 1px solid #bbb; text-align: center; font-size: 14px; color: #555;">${i.unidad}</td>
+                        <td style="padding: 10px; border: 1px solid #bbb; text-align: right; font-size: 14px;">${i.precio.toFixed(2)} €</td>
+                        <td style="padding: 10px; border: 1px solid #bbb; text-align: right; font-size: 14px; font-weight: bold;">${i.subtotal.toFixed(2)} €</td>
+                    </tr>
+                `;
+            });
+
+            pdfHtml += `
+                <div style="margin-bottom: 35px; background: #fff; page-break-inside: avoid;">
+                    <h2 style="margin-bottom: 5px; color: #8b0000; border-bottom: 2px solid #bbb; padding-bottom: 5px; font-size: 18px;">🏪 Cliente: ${p.clienteNombre}</h2>
+                    <p style="margin: 0 0 12px 0; font-size: 13px; color: #444;">📍 <strong>Dirección:</strong> ${p.clienteDireccion}</p>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+                        <thead>
+                            <tr style="background: #f2f2f2;">
+                                <th style="padding: 10px; border: 1px solid #bbb; text-align: left; font-size: 13px;">Producto</th>
+                                <th style="padding: 10px; border: 1px solid #bbb; text-align: center; font-size: 13px;">Cant.</th>
+                                <th style="padding: 10px; border: 1px solid #bbb; text-align: center; font-size: 13px;">Formato</th>
+                                <th style="padding: 10px; border: 1px solid #bbb; text-align: right; font-size: 13px;">Precio</th>
+                                <th style="padding: 10px; border: 1px solid #bbb; text-align: right; font-size: 13px;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filasTabla}
+                        </tbody>
+                    </table>
+                    <div style="text-align: right; font-size: 15px; font-weight: bold; color: #222; margin-top: 5px;">Total Cliente: ${p.total.toFixed(2)} €</div>
+                </div>
+                <hr style="border: 0; border-top: 1px dashed #aaa; margin-bottom: 25px;">
+            `;
         });
-        document.getElementById('pdf-total-dia').innerText = tot.toFixed(2);
-        const element = document.getElementById('pdf-template');
-        element.style.display = 'block';
-        html2pdf().from(element).set({ margin: 12, filename: `Pedidos_${fechaFormateadaSeleccionada}.pdf`, html2canvas: { scale: 2 }, jsPDF: { format: 'a4', orientation: 'portrait' } }).save().then(() => { element.style.display = 'none'; });
+
+        pdfHtml += `
+                <div style="text-align: right; margin-top: 40px; border-top: 4px double #000; padding-top: 15px;">
+                    <span style="font-size: 22px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ${totalGeneralDia.toFixed(2)} €</span>
+                </div>
+            </div>
+        `;
+
+        // Creamos un contenedor temporal invisible para pasárselo a la librería limpio
+        const contenedorTemporal = document.createElement('div');
+        contenedorTemporal.innerHTML = pdfHtml;
+
+        const opciones = {
+            margin:       12,
+            filename:     `Reparto_Dia_${fechaFormateadaSeleccionada}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Ejecuta la descarga directa
+        html2pdf().from(contenedorTemporal).set(opciones).save();
     }
 
     mostrarClientes(); mostrarProductos(); cargarDatosEnPedido();
