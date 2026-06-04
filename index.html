@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Pedidos - Comercial Cárnico</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #8b0000; --dark: #222; }
         * { box-sizing: border-box; }
@@ -60,6 +59,14 @@
             font-weight: bold !important;
             cursor: pointer !important;
         }
+
+        /* CONFIGURACIÓN EXCLUSIVA PARA LA VISTA DE IMPRESIÓN NATAL DEL MÓVIL */
+        @media print {
+            body * { display: none !important; } /* Ocultamos toda la web original */
+            #seccion-impresion-bloque, #seccion-impresion-bloque * { display: block !important; } /* Solo mostramos el PDF */
+            #seccion-impresion-bloque { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
+            .flex-print { display: flex !important; justify-content: space-between !important; align-items: center !important; }
+        }
     </style>
 </head>
 <body>
@@ -97,7 +104,7 @@
 
         <div id="panel-calendario" class="panel">
             <h3>📅 Calendario de Entregas</h3>
-            <p style="font-size: 14px; color: #555; margin-top: -10px;">Haz clic en cualquier día para ver sus pedidos y descargar el PDF diario.</p>
+            <p style="font-size: 14px; color: #555; margin-top: -10px;">Haz clic en cualquier día para ver sus pedidos y generar la hoja de reparto.</p>
             <div class="calendar-header">
                 <button class="day-btn-nav" onclick="cambiarMes(-1)">◀ Ant</button>
                 <h4 id="calendar-mes-ano" style="margin: 0; font-size: 18px; color: var(--primary);"></h4>
@@ -107,7 +114,7 @@
             <div id="dia-seleccionado-info" class="dia-info-box" style="display: none;">
                 <h3 style="margin-top: 0; color: var(--primary);" id="info-titulo-fecha">Pedidos del día</h3>
                 <div id="info-lista-pedidos"></div>
-                <button class="btn-submit" style="background: #e67e22; padding: 14px; margin-top: 15px;" onclick="descargarPdfDiaSeleccionado()">📄 Descargar PDF Completo de este Día</button>
+                <button class="btn-submit" style="background: #e67e22; padding: 14px; margin-top: 15px;" onclick="generarImpresionNativa()">📄 Imprimir / Guardar Hoja de Reparto en PDF</button>
             </div>
         </div>
 
@@ -146,6 +153,8 @@
         </div>
     </div>
 </div>
+
+<div id="seccion-impresion-bloque" style="display: none;"></div>
 
 <script>
     if (!localStorage.getItem('clientes')) localStorage.setItem('clientes', JSON.stringify([]));
@@ -346,62 +355,50 @@
         }
     }
 
-    // ELIMINACIÓN DE RIESGOS: REESCRITURA COMPLETA USANDO CONCATENACIÓN CLÁSICA (ANTI-PANTALLA EN BLANCO)
-    function descargarPdfDiaSeleccionado() {
-        if (!fechaFormateadaSeleccionada) return alert("Selecciona primero un día en el calendario.");
+    // NUEVO SISTEMA INMUNIZADO: SISTEMA DE IMPRESIÓN NATIVO DEL TELÉFONO
+    function generarImpresionNativa() {
+        if (!fechaFormateadaSeleccionada) return alert("Selecciona primero un día.");
 
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         const pedidosDelDia = historial.filter(p => p.fecha === fechaFormateadaSeleccionada);
-        if(pedidosDelDia.length === 0) return alert("No hay pedidos guardados en este día.");
+        if(pedidosDelDia.length === 0) return alert("No hay pedidos para este día.");
 
         const fechaBonita = fechaFormateadaSeleccionada.split('-').reverse().join('/');
         let totalGeneralDia = 0;
 
-        // Construcción mediante concatenación simple y segura, sin saltos de línea invisibles que rompan los smartphones
-        let htmlFinal = '<div style="font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff; width: 660px; margin: 0 auto; box-sizing: border-box;">';
-        htmlFinal += '<h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 10px; font-size: 24px; font-weight: bold; text-transform: uppercase;">Hoja de Preparación de Pedidos (Almacén)</h1>';
-        htmlFinal += '<h3 style="text-align: center; margin-top: 0; margin-bottom: 30px; color: #444; font-size: 15px;">FECHA DE REPARTO: ' + fechaBonita + '</h3>';
+        let htmlFinal = '<div style="font-family: Arial, sans-serif; padding: 10px; color: #000; background: #fff; width: 100%; box-sizing: border-box;">';
+        htmlFinal += '<h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 10px; font-size: 22px; font-weight: bold; text-transform: uppercase;">Hoja de Preparación de Pedidos (Almacén)</h1>';
+        htmlFinal += '<h3 style="text-align: center; margin-top: 0; margin-bottom: 25px; color: #444; font-size: 15px;">FECHA DE REPARTO: ' + fechaBonita + '</h3>';
 
         pedidosDelDia.forEach(p => {
             totalGeneralDia += p.total;
             let lineasProductos = '';
             
             p.items.forEach(i => {
-                lineasProductos += '<div style="margin-bottom: 8px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">';
-                lineasProductos += '<span style="text-align: left;">[ ] &nbsp; <strong>' + i.cantidad + ' ' + i.unit + '</strong> &nbsp; — &nbsp; ' + i.nombre + ' <span style="color: #555; font-size: 13px;">(a ' + i.precio.toFixed(2) + '€)</span></span>';
-                lineasProductos += '<span style="font-weight: bold; font-size: 15px; text-align: right; white-space: nowrap;">' + i.subtotal.toFixed(2) + ' €</span>';
+                lineasProductos += '<div class="flex-print" style="margin-bottom: 8px; font-size: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">';
+                lineasProductos += '<span>[ ] &nbsp; <strong>' + i.cantidad + ' ' + i.unit + '</strong> &nbsp; — &nbsp; ' + i.nombre + ' <span style="color: #555; font-size: 13px;">(a ' + i.precio.toFixed(2) + '€)</span></span>';
+                lineasProductos += '<span style="font-weight: bold;">' + i.subtotal.toFixed(2) + ' €</span>';
                 lineasProductos += '</div>';
             });
 
-            htmlFinal += '<div style="margin-bottom: 25px; background: #fff; border: 2px solid #000; padding: 15px; border-radius: 6px; box-sizing: border-box;">';
-            htmlFinal += '<h2 style="margin: 0 0 5px 0; font-size: 17px; color: #8b0000; font-weight: bold; text-transform: uppercase;">CLIENTE: ' + p.clienteNombre + '</h2>';
-            htmlFinal += '<p style="margin: 0 0 15px 0; font-size: 14px; color: #333;"><strong>Dirección:</strong> ' + p.clienteDireccion + '</p>';
-            htmlFinal += '<div style="margin-top: 10px; margin-bottom: 10px;">' + lineasProductos + '</div>';
-            htmlFinal += '<div style="text-align: right; font-size: 15px; font-weight: bold; margin-top: 10px; padding-top: 5px; border-top: 1px solid #000;">Total Cliente: ' + p.total.toFixed(2) + ' €</div>';
+            htmlFinal += '<div style="margin-bottom: 25px; background: #fff; border: 2px solid #000; padding: 12px; border-radius: 6px; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box;">';
+            htmlFinal += '<h2 style="margin: 0 0 5px 0; font-size: 16px; color: #8b0000; font-weight: bold; text-transform: uppercase;">CLIENTE: ' + p.clienteNombre + '</h2>';
+            htmlFinal += '<p style="margin: 0 0 12px 0; font-size: 13px; color: #333;"><strong>Dirección:</strong> ' + p.clienteDireccion + '</p>';
+            htmlFinal += '<div style="margin-top: 8px; margin-bottom: 8px;">' + lineasProductos + '</div>';
+            htmlFinal += '<div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 8px; padding-top: 4px; border-top: 1px solid #000;">Total Cliente: ' + p.total.toFixed(2) + ' €</div>';
             htmlFinal += '</div>';
         });
 
-        htmlFinal += '<div style="text-align: right; margin-top: 30px; border-top: 4px double #000; padding-top: 12px;">';
-        htmlFinal += '<span style="font-size: 21px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ' + totalGeneralDia.toFixed(2) + ' €</span>';
+        htmlFinal += '<div style="text-align: right; margin-top: 25px; border-top: 4px double #000; padding-top: 10px;">';
+        htmlFinal += '<span style="font-size: 19px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ' + totalGeneralDia.toFixed(2) + ' €</span>';
         htmlFinal += '</div></div>';
 
-        // Configuración directa y ultraligera para la librería html2pdf
-        const opciones = {
-            margin:       10,
-            filename:     'Planilla_Reparto_' + fechaFormateadaSeleccionada + '.pdf',
-            image:        { type: 'jpeg', quality: 0.95 },
-            html2canvas:  { 
-                scale: 2, 
-                useCORS: true,
-                logging: false
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+        // Inyectamos el HTML en el contenedor preparado
+        const areaImpresion = document.getElementById('seccion-impresion-bloque');
+        areaImpresion.innerHTML = htmlFinal;
 
-        // Generación instantánea
-        html2pdf().from(htmlFinal).set(opciones).save().catch(err => {
-            alert("Error: " + err.message);
-        });
+        // Lanzamos el menú del móvil nativo. Esto nunca falla.
+        window.print();
     }
 
     mostrarClientes(); mostrarProductos(); cargarDatosEnPedido();
