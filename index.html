@@ -105,6 +105,7 @@
             padding: 12px 10px;
             border: 1px solid #ddd;
             text-align: left;
+            vertical-align: middle;
         }
         th {
             background-color: var(--primary);
@@ -136,7 +137,29 @@
             color: #666;
             margin-bottom: 2px;
         }
-        /* --- ESTILOS NUEVOS PARA EL CALENDARIO --- */
+        /* Botones de acción rápidos en tablas */
+        .btn-action {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-delete {
+            background: #c0392b;
+            color: white;
+        }
+        .btn-save-inline {
+            background: #2980b9;
+            color: white;
+        }
+        .input-table-edit {
+            width: 80px;
+            padding: 6px;
+            font-size: 14px;
+            display: inline-block;
+        }
+        /* Calendario */
         .calendar-header {
             display: flex;
             justify-content: space-between;
@@ -170,7 +193,6 @@
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            position: relative;
         }
         .calendar-day.empty {
             background: #f9f9f9;
@@ -204,9 +226,7 @@
             border-radius: 8px;
             padding: 15px;
             margin-top: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-        /* Plantilla oculta para el diseño del PDF */
         #pdf-template {
             padding: 30px;
             color: #000;
@@ -263,8 +283,7 @@
                 <button class="day-btn-nav" onclick="cambiarMes(1)">Sig ▶</button>
             </div>
             
-            <div class="calendar-grid" id="calendar-grid-body">
-                </div>
+            <div class="calendar-grid" id="calendar-grid-body"></div>
 
             <div id="dia-seleccionado-info" class="dia-info-box" style="display: none;">
                 <h3 style="margin-top: 0; color: var(--primary);" id="info-titulo-fecha">Pedidos del día</h3>
@@ -288,7 +307,7 @@
             <h3>Lista de Clientes Registrados</h3>
             <div style="overflow-x: auto;">
                 <table id="tabla-clientes">
-                    <thead><tr><th>Cliente</th><th>Dirección</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Dirección</th><th style="text-align:center;">Acción</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -314,10 +333,10 @@
             </div>
             <button class="btn-submit" onclick="guardarProducto()">💾 Guardar Producto</button>
 
-            <h3>Catálogo de Productos</h3>
+            <h3>Catálogo de Productos y Precios Base</h3>
             <div style="overflow-x: auto;">
                 <table id="tabla-productos">
-                    <thead><tr><th>Producto</th><th>Formato de Venta</th><th>Precio Base</th></tr></thead>
+                    <thead><tr><th>Producto</th><th>Formato</th><th>Precio Base (€)</th><th style="text-align:center;">Acción</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -333,16 +352,14 @@
 </div>
 
 <script>
-    // Iniciar bases de datos locales en el dispositivo móvil
     if (!localStorage.getItem('clientes')) localStorage.setItem('clientes', JSON.stringify([]));
     if (!localStorage.getItem('productos')) localStorage.setItem('productos', JSON.stringify([]));
     if (!localStorage.getItem('historial_pedidos')) localStorage.setItem('historial_pedidos', JSON.stringify([]));
 
-    // Poner fecha de hoy por defecto en el formulario
     document.getElementById('ped-fecha').valueAsDate = new Date();
 
-    let fechaCalendarioActual = new Date(); // Controla el mes que se está viendo en el calendario visual
-    let fechaFormateadaSeleccionada = "";   // Almacena el día que tu padre toca con el dedo
+    let fechaCalendarioActual = new Date();
+    let fechaFormateadaSeleccionada = "";
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -355,7 +372,7 @@
         if(tabId === 'calendario') renderizarCalendarioVisual();
     }
 
-    // --- CLIENTES ---
+    // --- SECCIÓN CLIENTES (GUARDAR / MOSTRAR / ELIMINAR) ---
     function guardarCliente() {
         const nombre = document.getElementById('cli-nombre').value.trim();
         const direccion = document.getElementById('cli-direccion').value.trim();
@@ -375,12 +392,28 @@
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const tbody = document.querySelector('#tabla-clientes tbody');
         tbody.innerHTML = '';
-        clientes.forEach(c => {
-            tbody.innerHTML += `<tr><td><strong>${c.nombre}</strong></td><td>${c.direccion}</td></tr>`;
+        clientes.forEach((c, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${c.nombre}</strong></td>
+                    <td>${c.direccion}</td>
+                    <td style="text-align:center;">
+                        <button class="btn-action btn-delete" onclick="eliminarCliente(${idx})">🗑️</button>
+                    </td>
+                </tr>`;
         });
     }
 
-    // --- PRODUCTOS ---
+    function eliminarCliente(idx) {
+        if(confirm("¿Seguro que quieres eliminar este cliente? Se borrará del catálogo.")) {
+            const clientes = JSON.parse(localStorage.getItem('clientes'));
+            clientes.splice(idx, 1);
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+            mostrarClientes();
+        }
+    }
+
+    // --- SECCIÓN PRODUCTOS (GUARDAR / MOSTRAR / ACTUALIZAR PRECIO / ELIMINAR) ---
     function guardarProducto() {
         const nombre = document.getElementById('prod-nombre').value.trim();
         const unidad = document.getElementById('prod-unidad').value;
@@ -402,12 +435,43 @@
         const productos = JSON.parse(localStorage.getItem('productos'));
         const tbody = document.querySelector('#tabla-productos tbody');
         tbody.innerHTML = '';
-        productos.forEach(p => {
-            tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong></td><td>${p.unidad}</td><td>${p.precio.toFixed(2)} €</td></tr>`;
+        productos.forEach((p, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${p.nombre}</strong></td>
+                    <td>${p.unidad}</td>
+                    <td>
+                        <input type="number" class="input-table-edit" id="inline-precio-${idx}" value="${p.precio.toFixed(2)}" step="0.01">
+                        <button class="btn-action btn-save-inline" onclick="actualizarPrecioBase(${idx})">💾</button>
+                    </td>
+                    <td style="text-align:center;">
+                        <button class="btn-action btn-delete" onclick="eliminarProducto(${idx})">🗑️</button>
+                    </td>
+                </tr>`;
         });
     }
 
-    // --- ENTRADA DE PEDIDOS ---
+    function actualizarPrecioBase(idx) {
+        const nuevoPrecio = parseFloat(document.getElementById(`inline-precio-${idx}`).value);
+        if(isNaN(nuevoPrecio) || nuevoPrecio < 0) return alert("Introduce un precio válido.");
+
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        productos[idx].precio = nuevoPrecio;
+        localStorage.setItem('productos', JSON.stringify(productos));
+        alert("💰 Precio base actualizado correctamente.");
+        mostrarProductos();
+    }
+
+    function eliminarProducto(idx) {
+        if(confirm("¿Seguro que quieres eliminar este producto del catálogo?")) {
+            const productos = JSON.parse(localStorage.getItem('productos'));
+            productos.splice(idx, 1);
+            localStorage.setItem('productos', JSON.stringify(productos));
+            mostrarProductos();
+        }
+    }
+
+    // --- PEDIDOS Y CALENDARIO ---
     function cargarDatosEnPedido() {
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const productos = JSON.parse(localStorage.getItem('productos'));
@@ -502,7 +566,6 @@
         cargarDatosEnPedido(); 
     }
 
-    // --- LÓGICA DEL CALENDARIO VISUAL ---
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     
     function cambiarMes(direccion) {
@@ -521,7 +584,6 @@
 
         tituloMesAno.innerText = `${nombresMeses[mes]} ${ano}`;
 
-        // Añadir cabecera de los días de la semana
         const diasSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
         diasSemana.forEach(d => {
             grid.innerHTML += `<div class="calendar-day-name">${d}</div>`;
@@ -529,9 +591,8 @@
 
         const primerDiaMes = new Date(ano, mes, 1);
         let diaSemanaIndex = primerDiaMes.getDay(); 
-        if(diaSemanaIndex === 0) diaSemanaIndex = 7; // Ajustar Domingo como último de la semana
+        if(diaSemanaIndex === 0) diaSemanaIndex = 7;
 
-        // Espacios vacíos para los días del mes anterior
         for (let i = 1; i < diaSemanaIndex; i++) {
             grid.innerHTML += `<div class="calendar-day empty"></div>`;
         }
@@ -539,14 +600,11 @@
         const totalDiasMes = new Date(ano, mes + 1, 0).getDate();
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
 
-        // Dibujar cada día del mes actual
         for (let dia = 1; dia <= totalDiasMes; dia++) {
-            // Formato estándar YYYY-MM-DD para buscar coincidencias
             const mm = (mes + 1) < 10 ? '0' + (mes + 1) : (mes + 1);
             const dd = dia < 10 ? '0' + dia : dia;
             const fechaString = `${ano}-${mm}-${dd}`;
 
-            // Contar cuántos pedidos hay guardados para este día exacto
             const pedidosEseDia = historial.filter(p => p.fecha === fechaString);
 
             let badgeHtml = '';
@@ -566,9 +624,8 @@
     function seleccionarDia(fechaString, numeroDia) {
         fechaFormateadaSeleccionada = fechaString;
         
-        // Quitar selección visual previa y marcar el nuevo día tocado
         document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
-        event.currentTarget.classList.add('selected');
+        if(event.currentTarget) event.currentTarget.classList.add('selected');
 
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         const pedidosDelDia = historial.filter(p => p.fecha === fechaString);
@@ -599,7 +656,6 @@
         infoBox.style.display = 'block';
     }
 
-    // --- GENERAR UN SOLO PDF CON TODO EL DÍA DEL CALENDARIO COMBINADO ---
     function descargarPdfDiaSeleccionado() {
         if (!fechaFormateadaSeleccionada) return;
 
@@ -653,7 +709,6 @@
 
         document.getElementById('pdf-total-dia').innerText = totalGeneralDia.toFixed(2);
 
-        // Exportar a PDF
         const elementoPDF = document.getElementById('pdf-template');
         elementoPDF.style.display = 'block';
 
@@ -670,7 +725,7 @@
         });
     }
 
-    // Cargas iniciales básicas
+    // Inicialización de listas
     mostrarClientes();
     mostrarProductos();
     cargarDatosEnPedido();
