@@ -271,7 +271,7 @@
             if(cant > 0) {
                 const sub = cant * precioEspecial;
                 totalPedido += sub;
-                itemsPedido.push({ nombre: productos[idx].nombre, unidad: productos[idx].unidad, cantidad: cant, precio: precioEspecial, subtotal: sub });
+                itemsPedido.push({ nombre: productos[idx].nombre, unit: productos[idx].unidad, cantidad: cant, precio: precioEspecial, subtotal: sub });
             }
         });
         if(itemsPedido.length === 0) return alert("Pon cantidades.");
@@ -327,7 +327,7 @@
         } else {
             pedidosDelDia.forEach(p => {
                 let itemsList = '';
-                p.items.forEach(i => { itemsList += `<li>${i.cantidad} ${i.unidad} de <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€</li>`; });
+                p.items.forEach(i => { itemsList += `<li>${i.cantidad} ${i.unit} de <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€</li>`; });
                 
                 lista.innerHTML += `
                     <div class="pedido-dia-item">
@@ -356,7 +356,7 @@
         }
     }
 
-    // NUEVO FORMATO DE REPARTO COMPATIBLE CON MÓVILES + PRECIOS + CHECKBOXES
+    // SOLUCIÓN RADICAL: RENDERIZADO DESDE TEXTO DIRECTO EN MEMORIA (INMUNIZADO PARA MÓVILES)
     function descargarPdfDiaSeleccionado() {
         if (!fechaFormateadaSeleccionada) return alert("Selecciona primero un día en el calendario.");
 
@@ -367,34 +367,32 @@
         const fechaBonita = fechaFormateadaSeleccionada.split('-').reverse().join('/');
         let totalGeneralDia = 0;
 
-        // Estructura idéntica al PDF de almacén aportado por el usuario
-        let pdfHtml = `
-            <div style="font-family: Arial, sans-serif; padding: 30px; color: #000; background: #fff; width: 700px; margin: 0 auto; box-sizing: border-box;">
+        // Construcción limpia del documento como una String de HTML pura
+        let stringHtmlParaPdf = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff; width: 680px; margin: 0 auto; box-sizing: border-box;">
                 <h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 10px; font-size: 24px; font-weight: bold; text-transform: uppercase;">Hoja de Preparación de Pedidos (Almacén)</h1>
-                <h3 style="text-align: center; margin-top: 0; margin-bottom: 35px; color: #444; font-size: 16px;">FECHA DE REPARTO: ${fechaBonita}</h3>
+                <h3 style="text-align: center; margin-top: 0; margin-bottom: 30px; color: #444; font-size: 15px;">FECHA DE REPARTO: ${fechaBonita}</h3>
         `;
 
         pedidosDelDia.forEach(p => {
             totalGeneralDia += p.total;
             let lineasProductos = '';
             
-            // Construimos la lista con la caja de verificación [ ] y los precios integrados
             p.items.forEach(i => {
                 lineasProductos += `
-                    <div style="margin-bottom: 10px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #ddd; padding-bottom: 6px;">
-                        <span>[ ] &nbsp; <strong>${i.cantidad} ${i.unidad}</strong> &nbsp; — &nbsp; ${i.nombre} <span style="color: #666; font-size: 13px;">(a ${i.precio.toFixed(2)}€)</span></span>
-                        <span style="font-weight: bold; font-size: 15px;">${i.subtotal.toFixed(2)} €</span>
+                    <div style="margin-bottom: 8px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+                        <span style="text-align: left;">[ ] &nbsp; <strong>${i.cantidad} ${i.unit}</strong> &nbsp; — &nbsp; ${i.nombre} <span style="color: #555; font-size: 13px;">(a ${i.precio.toFixed(2)}€)</span></span>
+                        <span style="font-weight: bold; font-size: 15px; text-align: right; white-space: nowrap;">${i.subtotal.toFixed(2)} €</span>
                     </div>
                 `;
             });
 
-            // Bloque por cliente adaptado
-            pdfHtml += `
-                <div style="margin-bottom: 35px; background: #fff; page-break-inside: avoid; break-inside: avoid; border: 2px solid #000; padding: 15px; border-radius: 6px;">
-                    <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #8b0000; font-weight: bold; text-transform: uppercase;">CLIENTE: ${p.clienteNombre}</h2>
+            stringHtmlParaPdf += `
+                <div style="margin-bottom: 25px; background: #fff; page-break-inside: avoid; border: 2px solid #000; padding: 15px; border-radius: 6px; box-sizing: border-box;">
+                    <h2 style="margin: 0 0 5px 0; font-size: 17px; color: #8b0000; font-weight: bold; text-transform: uppercase;">CLIENTE: ${p.clienteNombre}</h2>
                     <p style="margin: 0 0 15px 0; font-size: 14px; color: #333;"><strong>Dirección:</strong> ${p.clienteDireccion}</p>
                     
-                    <div style="margin-top: 10px; margin-bottom: 10px; padding-top: 5px;">
+                    <div style="margin-top: 10px; margin-bottom: 10px;">
                         ${lineasProductos}
                     </div>
                     
@@ -403,47 +401,30 @@
             `;
         });
 
-        // Cierre con el Total General del reparto
-        pdfHtml += `
-                <div style="text-align: right; margin-top: 35px; border-top: 4px double #000; padding-top: 15px;">
-                    <span style="font-size: 22px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ${totalGeneralDia.toFixed(2)} €</span>
+        stringHtmlParaPdf += `
+                <div style="text-align: right; margin-top: 30px; border-top: 4px double #000; padding-top: 12px;">
+                    <span style="font-size: 21px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ${totalGeneralDia.toFixed(2)} €</span>
                 </div>
             </div>
         `;
 
-        // SOLUCIÓN FIX MÓVIL: En lugar de sacarlo de la pantalla con coordenadas locas (-9999px),
-        // lo anclamos abajo de forma invisible al ojo (opacity 0.01) para que el lector de capturas móvil lo lea al 100%.
-        const contenedorTemporal = document.createElement('div');
-        contenedorTemporal.style.position = 'fixed';
-        contenedorTemporal.style.bottom = '0';
-        contenedorTemporal.style.right = '0';
-        contenedorTemporal.style.width = '750px';
-        contenedorTemporal.style.opacity = '0.01';
-        contenedorTemporal.style.zIndex = '-9999';
-        contenedorTemporal.style.pointerEvents = 'none';
-        contenedorTemporal.innerHTML = pdfHtml;
-        document.body.appendChild(contenedorTemporal);
-
+        // Opciones optimizadas. Pasamos jsPDF en formato string directamente
         const opciones = {
-            margin:       12,
+            margin:       10,
             filename:     `Planilla_Reparto_${fechaFormateadaSeleccionada}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true,
-                scrollY: 0,
-                scrollX: 0,
-                windowWidth: 1024
+                logging: false,
+                width: 720
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Descarga y limpia el elemento temporal
-        html2pdf().from(contenedorTemporal).set(opciones).save().then(() => {
-            document.body.removeChild(contenedorTemporal);
-        }).catch(err => {
-            alert("Ocurrió un error al procesar el PDF.");
-            document.body.removeChild(contenedorTemporal);
+        // LLAMADA CLAVE: html2pdf ya NO lee la pantalla del móvil, lee directamente la variable de texto "stringHtmlParaPdf"
+        html2pdf().from(stringHtmlParaPdf).set(opciones).save().catch(err => {
+            alert("Error al procesar el archivo PDF: " + err.message);
         });
     }
 
