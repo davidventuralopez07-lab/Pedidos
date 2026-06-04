@@ -137,13 +137,14 @@
             color: #666;
             margin-bottom: 2px;
         }
-        /* Botones de acción rápidos en tablas */
+        /* Botones de acción en tablas */
         .btn-action {
             border: none;
             padding: 8px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 14px;
         }
         .btn-delete {
             background: #c0392b;
@@ -152,12 +153,14 @@
         .btn-save-inline {
             background: #2980b9;
             color: white;
+            margin-left: 4px;
         }
         .input-table-edit {
-            width: 80px;
+            width: 70px;
             padding: 6px;
             font-size: 14px;
-            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         /* Calendario */
         .calendar-header {
@@ -307,7 +310,13 @@
             <h3>Lista de Clientes Registrados</h3>
             <div style="overflow-x: auto;">
                 <table id="tabla-clientes">
-                    <thead><tr><th>Cliente</th><th>Dirección</th><th style="text-align:center;">Acción</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Dirección</th>
+                            <th style="text-align:center;">Acción</th>
+                        </tr>
+                    </thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -336,7 +345,14 @@
             <h3>Catálogo de Productos y Precios Base</h3>
             <div style="overflow-x: auto;">
                 <table id="tabla-productos">
-                    <thead><tr><th>Producto</th><th>Formato</th><th>Precio Base (€)</th><th style="text-align:center;">Acción</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Formato</th>
+                            <th>Precio Base (€)</th>
+                            <th style="text-align:center;">Acción</th>
+                        </tr>
+                    </thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -365,14 +381,18 @@
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
         
-        event.target.classList.add('active');
+        if(event && event.target) {
+            event.target.classList.add('active');
+        }
         document.getElementById(`panel-${tabId}`).classList.add('active');
         
         if(tabId === 'pedidos') cargarDatosEnPedido();
         if(tabId === 'calendario') renderizarCalendarioVisual();
+        if(tabId === 'clientes') mostrarClientes();
+        if(tabId === 'productos') mostrarProductos();
     }
 
-    // --- SECCIÓN CLIENTES (GUARDAR / MOSTRAR / ELIMINAR) ---
+    // --- ACCIONES DE CLIENTES ---
     function guardarCliente() {
         const nombre = document.getElementById('cli-nombre').value.trim();
         const direccion = document.getElementById('cli-direccion').value.trim();
@@ -392,20 +412,21 @@
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const tbody = document.querySelector('#tabla-clientes tbody');
         tbody.innerHTML = '';
+        
         clientes.forEach((c, idx) => {
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${c.nombre}</strong></td>
                     <td>${c.direccion}</td>
                     <td style="text-align:center;">
-                        <button class="btn-action btn-delete" onclick="eliminarCliente(${idx})">🗑️</button>
+                        <button class="btn-action btn-delete" onclick="eliminarCliente(${idx})">🗑️ Eliminar</button>
                     </td>
                 </tr>`;
         });
     }
 
     function eliminarCliente(idx) {
-        if(confirm("¿Seguro que quieres eliminar este cliente? Se borrará del catálogo.")) {
+        if(confirm("¿Seguro que quieres eliminar este cliente del sistema?")) {
             const clientes = JSON.parse(localStorage.getItem('clientes'));
             clientes.splice(idx, 1);
             localStorage.setItem('clientes', JSON.stringify(clientes));
@@ -413,7 +434,7 @@
         }
     }
 
-    // --- SECCIÓN PRODUCTOS (GUARDAR / MOSTRAR / ACTUALIZAR PRECIO / ELIMINAR) ---
+    // --- ACCIONES DE PRODUCTOS ---
     function guardarProducto() {
         const nombre = document.getElementById('prod-nombre').value.trim();
         const unidad = document.getElementById('prod-unidad').value;
@@ -435,6 +456,7 @@
         const productos = JSON.parse(localStorage.getItem('productos'));
         const tbody = document.querySelector('#tabla-productos tbody');
         tbody.innerHTML = '';
+        
         productos.forEach((p, idx) => {
             tbody.innerHTML += `
                 <tr>
@@ -442,10 +464,10 @@
                     <td>${p.unidad}</td>
                     <td>
                         <input type="number" class="input-table-edit" id="inline-precio-${idx}" value="${p.precio.toFixed(2)}" step="0.01">
-                        <button class="btn-action btn-save-inline" onclick="actualizarPrecioBase(${idx})">💾</button>
+                        <button class="btn-action btn-save-inline" onclick="actualizarPrecioBase(${idx})">💾 Cambiar</button>
                     </td>
                     <td style="text-align:center;">
-                        <button class="btn-action btn-delete" onclick="eliminarProducto(${idx})">🗑️</button>
+                        <button class="btn-action btn-delete" onclick="eliminarProducto(${idx})">🗑️ Eliminar</button>
                     </td>
                 </tr>`;
         });
@@ -458,12 +480,12 @@
         const productos = JSON.parse(localStorage.getItem('productos'));
         productos[idx].precio = nuevoPrecio;
         localStorage.setItem('productos', JSON.stringify(productos));
-        alert("💰 Precio base actualizado correctamente.");
+        alert("💰 Precio base modificado para futuros pedidos.");
         mostrarProductos();
     }
 
     function eliminarProducto(idx) {
-        if(confirm("¿Seguro que quieres eliminar este producto del catálogo?")) {
+        if(confirm("¿Seguro que quieres borrar este producto del catálogo?")) {
             const productos = JSON.parse(localStorage.getItem('productos'));
             productos.splice(idx, 1);
             localStorage.setItem('productos', JSON.stringify(productos));
@@ -471,7 +493,7 @@
         }
     }
 
-    // --- PEDIDOS Y CALENDARIO ---
+    // --- LÓGICA DE PEDIDOS Y FORMULARIOS ---
     function cargarDatosEnPedido() {
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const productos = JSON.parse(localStorage.getItem('productos'));
@@ -501,7 +523,7 @@
                             <input type="number" class="ped-cant" placeholder="0" min="0" value="0">
                         </div>
                         <div class="input-inline">
-                            <label>Precio Venta (€):</label>
+                            <label>Precio Especial (€):</label>
                             <input type="number" class="ped-prec-edit" value="${p.precio.toFixed(2)}" step="0.01">
                         </div>
                     </div>
@@ -543,6 +565,7 @@
                 itemsPedido.push({
                     nombre: prod.nombre,
                     unidad: prod.unidad,
+                    imageName: prod.imageName,
                     cantidad: cant,
                     precio: precioEspecial,
                     subtotal: subtotal
@@ -550,7 +573,7 @@
             }
         });
 
-        if(itemsPedido.length === 0) return alert("⚠️ Pon una cantidad en algún producto antes de guardar.");
+        if(itemsPedido.length === 0) return alert("⚠️ Pon una cantidad válida en algún producto.");
 
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         historial.push({
@@ -562,10 +585,11 @@
         });
         localStorage.setItem('historial_pedidos', JSON.stringify(historial));
 
-        alert(`✅ Pedido guardado en el calendario.`);
+        alert(`✅ Pedido guardado en la agenda.`);
         cargarDatosEnPedido(); 
     }
 
+    // --- CALENDARIO ---
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     
     function cambiarMes(direccion) {
@@ -613,7 +637,7 @@
             }
 
             grid.innerHTML += `
-                <div class="calendar-day" onclick="seleccionarDia('${fechaString}', ${dia})">
+                <div class="calendar-day" id="cal-day-${dia}" onclick="seleccionarDia('${fechaString}', ${dia})">
                     <span>${dia}</span>
                     ${badgeHtml}
                 </div>
@@ -625,7 +649,8 @@
         fechaFormateadaSeleccionada = fechaString;
         
         document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
-        if(event.currentTarget) event.currentTarget.classList.add('selected');
+        const elementoDia = document.getElementById(`cal-day-${numeroDia}`);
+        if(elementoDia) elementoDia.classList.add('selected');
 
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         const pedidosDelDia = historial.filter(p => p.fecha === fechaString);
@@ -725,7 +750,7 @@
         });
     }
 
-    // Inicialización de listas
+    // Ejecuciones iniciales
     mostrarClientes();
     mostrarProductos();
     cargarDatosEnPedido();
