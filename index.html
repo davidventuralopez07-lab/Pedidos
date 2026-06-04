@@ -136,12 +136,75 @@
             color: #666;
             margin-bottom: 2px;
         }
-        .pedido-bloque {
+        /* --- ESTILOS NUEVOS PARA EL CALENDARIO --- */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background: #f2f2f2;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+        .calendar-day-name {
+            font-weight: bold;
+            font-size: 12px;
+            color: #666;
+            padding: 5px 0;
+        }
+        .calendar-day {
             background: #fff;
-            border: 1px solid #8b0000;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px 2px;
+            cursor: pointer;
+            font-weight: bold;
+            min-height: 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        .calendar-day.empty {
+            background: #f9f9f9;
+            border: none;
+            cursor: default;
+        }
+        .calendar-day.selected {
+            border: 2px solid var(--primary);
+            background: #fff0f0;
+        }
+        .badge-pedidos {
+            background: #27ae60;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-top: 3px;
+        }
+        .day-btn-nav {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .dia-info-box {
+            background: #fff;
+            border: 1px solid #ccc;
             border-radius: 8px;
             padding: 15px;
-            margin-bottom: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         /* Plantilla oculta para el diseño del PDF */
         #pdf-template {
@@ -164,8 +227,8 @@
 
     <div class="container">
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('pedidos')">🛒 Tomar Pedido</button>
-            <button class="tab-btn" onclick="switchTab('agenda')" onclick="cargarAgenda()">📅 Agenda/Días</button>
+            <button class="tab-btn active" onclick="switchTab('pedidos')">🛒 Hacer Pedido</button>
+            <button class="tab-btn" onclick="switchTab('calendario')">📅 El Calendario</button>
             <button class="tab-btn" onclick="switchTab('clientes')">👥 Clientes</button>
             <button class="tab-btn" onclick="switchTab('productos')">📦 Productos</button>
         </div>
@@ -173,7 +236,7 @@
         <div id="panel-pedidos" class="panel active">
             <h3>🛒 Formulario de Pedido</h3>
             <div class="form-group">
-                <label>Fecha de Entrega programada:</label>
+                <label>Fecha programada para la entrega:</label>
                 <input type="date" id="ped-fecha">
             </div>
             <div class="form-group">
@@ -184,25 +247,30 @@
             </div>
             <p id="ped-direccion-muestra" style="font-style: italic; color: #b01a1a; font-weight: bold; margin-bottom: 20px;"></p>
 
-            <h4>Productos, Cantidades y Precios:</h4>
+            <h4>Añade las cantidades y modifica precios si lo necesitas:</h4>
             <div id="lista-productos-pedido"></div>
 
-            <button class="btn-submit" style="background: #27ae60; margin-top: 20px; padding: 16px;" onclick="guardarPedidoEnDispositivo()">💾 Guardar Pedido en Agenda</button>
+            <button class="btn-submit" style="background: #27ae60; margin-top: 20px; padding: 16px;" onclick="guardarPedidoEnCalendario()">💾 Guardar Pedido en el Calendario</button>
         </div>
 
-        <div id="panel-agenda" class="panel">
-            <h3>📅 Historial y Consultas por Fecha</h3>
-            <div class="form-group">
-                <label>Selecciona el día que deseas revisar:</label>
-                <input type="date" id="agenda-fecha-filtro" onchange="mostrarPedidosFecha()">
+        <div id="panel-calendario" class="panel">
+            <h3>📅 Calendario de Entregas</h3>
+            <p style="font-size: 14px; color: #555; margin-top: -10px;">Haz clic en cualquier día para ver sus pedidos y descargar el PDF diario.</p>
+            
+            <div class="calendar-header">
+                <button class="day-btn-nav" onclick="cambiarMes(-1)">◀ Ant</button>
+                <h4 id="calendar-mes-ano" style="margin: 0; font-size: 18px; color: var(--primary);"></h4>
+                <button class="day-btn-nav" onclick="cambiarMes(1)">Sig ▶</button>
             </div>
-
-            <div id="agenda-acciones" style="display:none; margin-bottom: 20px;">
-                <button class="btn-submit" style="background: #e67e22; padding: 15px;" onclick="generarPdfDelDia()">📄 Exportar Pedidos de este Día a PDF</button>
-            </div>
-
-            <div id="agenda-resultados">
+            
+            <div class="calendar-grid" id="calendar-grid-body">
                 </div>
+
+            <div id="dia-seleccionado-info" class="dia-info-box" style="display: none;">
+                <h3 style="margin-top: 0; color: var(--primary);" id="info-titulo-fecha">Pedidos del día</h3>
+                <div id="info-lista-pedidos"></div>
+                <button class="btn-submit" style="background: #e67e22; padding: 14px; margin-top: 15px;" onclick="descargarPdfDiaSeleccionado()">📄 Descargar PDF Completo de este Día</button>
+            </div>
         </div>
 
         <div id="panel-clientes" class="panel">
@@ -260,10 +328,7 @@
 <div id="pdf-template" style="display: none;">
     <h2 style="color: #8b0000; text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 10px;">REPORTE DIARIO DE PEDIDOS</h2>
     <h4 style="text-align: center; margin-top: 0; margin-bottom: 25px;">Fecha de Entrega: <span id="pdf-fecha-dia"></span></h4>
-    
-    <div id="pdf-contenedor-clientes">
-        </div>
-    
+    <div id="pdf-contenedor-clientes"></div>
     <h2 style="text-align: right; margin-top: 30px; border-top: 3px double #222; padding-top: 10px; font-size: 22px;">TOTAL GENERAL DEL DÍA: <span id="pdf-total-dia">0.00</span>€</h2>
 </div>
 
@@ -273,9 +338,11 @@
     if (!localStorage.getItem('productos')) localStorage.setItem('productos', JSON.stringify([]));
     if (!localStorage.getItem('historial_pedidos')) localStorage.setItem('historial_pedidos', JSON.stringify([]));
 
-    // Poner fecha de hoy por defecto en los calendarios
+    // Poner fecha de hoy por defecto en el formulario
     document.getElementById('ped-fecha').valueAsDate = new Date();
-    document.getElementById('agenda-fecha-filtro').valueAsDate = new Date();
+
+    let fechaCalendarioActual = new Date(); // Controla el mes que se está viendo en el calendario visual
+    let fechaFormateadaSeleccionada = "";   // Almacena el día que tu padre toca con el dedo
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -285,14 +352,14 @@
         document.getElementById(`panel-${tabId}`).classList.add('active');
         
         if(tabId === 'pedidos') cargarDatosEnPedido();
-        if(tabId === 'agenda') mostrarPedidosFecha();
+        if(tabId === 'calendario') renderizarCalendarioVisual();
     }
 
     // --- CLIENTES ---
     function guardarCliente() {
         const nombre = document.getElementById('cli-nombre').value.trim();
         const direccion = document.getElementById('cli-direccion').value.trim();
-        if(!nombre || !direccion) return alert('Por favor, introduce el nombre y dirección.');
+        if(!nombre || !direccion) return alert('Introduce nombre y dirección.');
 
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         clientes.push({ nombre, direccion });
@@ -319,7 +386,7 @@
         const unidad = document.getElementById('prod-unidad').value;
         const precio = parseFloat(document.getElementById('prod-precio').value);
 
-        if(!nombre || isNaN(precio)) return alert('Por favor, rellena los datos del producto.');
+        if(!nombre || isNaN(precio)) return alert('Rellena los datos del producto.');
 
         const productos = JSON.parse(localStorage.getItem('productos'));
         productos.push({ nombre, unidad, precio });
@@ -370,7 +437,7 @@
                             <input type="number" class="ped-cant" placeholder="0" min="0" value="0">
                         </div>
                         <div class="input-inline">
-                            <label>Precio (€):</label>
+                            <label>Precio Venta (€):</label>
                             <input type="number" class="ped-prec-edit" value="${p.precio.toFixed(2)}" step="0.01">
                         </div>
                     </div>
@@ -387,10 +454,10 @@
         pDireccion.innerText = "📍 Dirección: " + clientes[idx].direccion;
     }
 
-    function guardarPedidoEnDispositivo() {
+    function guardarPedidoEnCalendario() {
         const fecha = document.getElementById('ped-fecha').value;
         const cliIdx = document.getElementById('ped-cliente').value;
-        if(cliIdx === "" || !fecha) return alert("❌ Selecciona fecha y cliente.");
+        if(cliIdx === "" || !fecha) return alert("❌ Selecciona la fecha y el cliente.");
 
         const clientes = JSON.parse(localStorage.getItem('clientes'));
         const productos = JSON.parse(localStorage.getItem('productos'));
@@ -419,7 +486,7 @@
             }
         });
 
-        if(itemsPedido.length === 0) return alert("⚠️ No has puesto cantidad en ningún producto.");
+        if(itemsPedido.length === 0) return alert("⚠️ Pon una cantidad en algún producto antes de guardar.");
 
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         historial.push({
@@ -431,54 +498,117 @@
         });
         localStorage.setItem('historial_pedidos', JSON.stringify(historial));
 
-        alert("✅ Pedido guardado en el calendario de forma segura.");
-        cargarDatosEnPedido(); // Resetear formulario
+        alert(`✅ Pedido guardado en el calendario.`);
+        cargarDatosEnPedido(); 
     }
 
-    // --- AGENDA & FILTRADO POR CALENDARIO ---
-    function mostrarPedidosFecha() {
-        const fechaFiltro = document.getElementById('agenda-fecha-filtro').value;
-        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
-        const contenedor = document.getElementById('agenda-resultados');
-        const barraAcciones = document.getElementById('agenda-acciones');
+    // --- LÓGICA DEL CALENDARIO VISUAL ---
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    
+    function cambiarMes(direccion) {
+        fechaCalendarioActual.setMonth(fechaCalendarioActual.getMonth() + direccion);
+        renderizarCalendarioVisual();
+        document.getElementById('dia-seleccionado-info').style.display = 'none';
+    }
 
-        const pedidosDelDia = historial.filter(p => p.fecha === fechaFiltro);
-        contenedor.innerHTML = '';
+    function renderizarCalendarioVisual() {
+        const grid = document.getElementById('calendar-grid-body');
+        const tituloMesAno = document.getElementById('calendar-mes-ano');
+        grid.innerHTML = '';
 
-        if(pedidosDelDia.length === 0) {
-            barraAcciones.style.display = 'none';
-            contenedor.innerHTML = `<p style="text-align:center; color:#777; font-weight:bold; margin-top:20px;">📅 No hay ningún pedido agendado para este día.</p>`;
-            return;
+        const ano = fechaCalendarioActual.getFullYear();
+        const mes = fechaCalendarioActual.getMonth();
+
+        tituloMesAno.innerText = `${nombresMeses[mes]} ${ano}`;
+
+        // Añadir cabecera de los días de la semana
+        const diasSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+        diasSemana.forEach(d => {
+            grid.innerHTML += `<div class="calendar-day-name">${d}</div>`;
+        });
+
+        const primerDiaMes = new Date(ano, mes, 1);
+        let diaSemanaIndex = primerDiaMes.getDay(); 
+        if(diaSemanaIndex === 0) diaSemanaIndex = 7; // Ajustar Domingo como último de la semana
+
+        // Espacios vacíos para los días del mes anterior
+        for (let i = 1; i < diaSemanaIndex; i++) {
+            grid.innerHTML += `<div class="calendar-day empty"></div>`;
         }
 
-        barraAcciones.style.display = 'block';
+        const totalDiasMes = new Date(ano, mes + 1, 0).getDate();
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
 
-        pedidosDelDia.forEach(p => {
-            let tablaArticulos = '';
-            p.items.forEach(i => {
-                tablaArticulos += `<li>${i.cantidad} ${i.unidad} - <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€ (Subtotal: ${i.subtotal.toFixed(2)}€)</li>`;
-            });
+        // Dibujar cada día del mes actual
+        for (let dia = 1; dia <= totalDiasMes; dia++) {
+            // Formato estándar YYYY-MM-DD para buscar coincidencias
+            const mm = (mes + 1) < 10 ? '0' + (mes + 1) : (mes + 1);
+            const dd = dia < 10 ? '0' + dia : dia;
+            const fechaString = `${ano}-${mm}-${dd}`;
 
-            contenedor.innerHTML += `
-                <div class="pedido-bloque">
-                    <h4>🏪 ${p.clienteNombre}</h4>
-                    <p style="margin: 4px 0; font-size:14px; color:#555;">📍 Dirección: ${p.clienteDireccion}</p>
-                    <ul style="padding-left:20px; margin:10px 0;">${tablaArticulos}</ul>
-                    <p style="text-align:right; margin:0; font-weight:bold; color:var(--primary);">Total Cliente: ${p.total.toFixed(2)}€</p>
+            // Contar cuántos pedidos hay guardados para este día exacto
+            const pedidosEseDia = historial.filter(p => p.fecha === fechaString);
+
+            let badgeHtml = '';
+            if(pedidosEseDia.length > 0) {
+                badgeHtml = `<span class="badge-pedidos">${pedidosEseDia.length} ped</span>`;
+            }
+
+            grid.innerHTML += `
+                <div class="calendar-day" onclick="seleccionarDia('${fechaString}', ${dia})">
+                    <span>${dia}</span>
+                    ${badgeHtml}
                 </div>
             `;
-        });
+        }
     }
 
-    // --- GENERAR UN SOLO PDF CON TODO EL DÍA COMBINADO ---
-    function generarPdfDelDia() {
-        const fechaFiltro = document.getElementById('agenda-fecha-filtro').value;
+    function seleccionarDia(fechaString, numeroDia) {
+        fechaFormateadaSeleccionada = fechaString;
+        
+        // Quitar selección visual previa y marcar el nuevo día tocado
+        document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
-        const pedidosDelDia = historial.filter(p => p.fecha === fechaFiltro);
+        const pedidosDelDia = historial.filter(p => p.fecha === fechaString);
 
-        if(pedidosDelDia.length === 0) return;
+        const infoBox = document.getElementById('dia-seleccionado-info');
+        const listaPedidosHtml = document.getElementById('info-lista-pedidos');
+        const tituloFecha = document.getElementById('info-titulo-fecha');
 
-        document.getElementById('pdf-fecha-dia').innerText = fechaFiltro.split('-').reverse().join('/');
+        tituloFecha.innerText = `Pedidos para el día ${numeroDia} de ${nombresMeses[fechaCalendarioActual.getMonth()]}`;
+        listaPedidosHtml.innerHTML = '';
+
+        if (pedidosDelDia.length === 0) {
+            listaPedidosHtml.innerHTML = `<p style="color:#777; font-style:italic;">No hay pedidos agendados para este día comercial.</p>`;
+        } else {
+            pedidosDelDia.forEach(p => {
+                let itemsList = '';
+                p.items.forEach(i => {
+                    itemsList += `<li>${i.cantidad} ${i.unidad} de <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€</li>`;
+                });
+                listaPedidosHtml.innerHTML += `
+                    <div style="border-bottom:1px solid #eee; padding:10px 0;">
+                        <strong>🏪 ${p.clienteNombre}</strong> (${p.total.toFixed(2)}€)
+                        <ul style="margin:5px 0 0 15px; padding:0; font-size:14px; color:#444;">${itemsList}</ul>
+                    </div>
+                `;
+            });
+        }
+        infoBox.style.display = 'block';
+    }
+
+    // --- GENERAR UN SOLO PDF CON TODO EL DÍA DEL CALENDARIO COMBINADO ---
+    function descargarPdfDiaSeleccionado() {
+        if (!fechaFormateadaSeleccionada) return;
+
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        const pedidosDelDia = historial.filter(p => p.fecha === fechaFormateadaSeleccionada);
+
+        if(pedidosDelDia.length === 0) return alert("No hay pedidos guardados en este día para exportar.");
+
+        document.getElementById('pdf-fecha-dia').innerText = fechaFormateadaSeleccionada.split('-').reverse().join('/');
         const contenedorPdf = document.getElementById('pdf-contenedor-clientes');
         contenedorPdf.innerHTML = '';
         
@@ -491,11 +621,11 @@
             p.items.forEach(i => {
                 filasTabla += `
                     <tr>
-                        <td style="padding: 6px; border: 1px solid #ddd;">${i.nombre}</td>
-                        <td style="padding: 6px; border: 1px solid #ddd; text-align:center;">${i.cantidad}</td>
-                        <td style="padding: 6px; border: 1px solid #ddd; text-align:center;">${i.unidad}</td>
-                        <td style="padding: 6px; border: 1px solid #ddd; text-align:right;">${i.precio.toFixed(2)} €</td>
-                        <td style="padding: 6px; border: 1px solid #ddd; text-align:right;">${i.subtotal.toFixed(2)} €</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${i.nombre}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align:center;">${i.cantidad}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align:center;">${i.unidad}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align:right;">${i.precio.toFixed(2)} €</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align:right;">${i.subtotal.toFixed(2)} €</td>
                     </tr>
                 `;
             });
@@ -507,29 +637,29 @@
                     <table style="width: 100%; border-collapse: collapse; font-size:13px;">
                         <thead>
                             <tr style="background: #f9f9f9;">
-                                <th style="color:black; padding: 6px; border: 1px solid #ddd;">Producto</th>
-                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:center;">Cant.</th>
-                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:center;">Formato</th>
-                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:right;">Precio</th>
-                                <th style="color:black; padding: 6px; border: 1px solid #ddd; text-align:right;">Subtotal</th>
+                                <th style="color:black; padding: 8px; border: 1px solid #ddd;">Producto</th>
+                                <th style="color:black; padding: 8px; border: 1px solid #ddd; text-align:center;">Cant.</th>
+                                <th style="color:black; padding: 8px; border: 1px solid #ddd; text-align:center;">Formato</th>
+                                <th style="color:black; padding: 8px; border: 1px solid #ddd; text-align:right;">Precio</th>
+                                <th style="color:black; padding: 8px; border: 1px solid #ddd; text-align:right;">Subtotal</th>
                             </tr>
                         </thead>
                         <tbody>${filasTabla}</tbody>
                     </table>
-                    <p style="text-align:right; font-weight:bold; margin-top:8px; margin-bottom:0;">Total de este Cliente: ${p.total.toFixed(2)}€</p>
+                    <p style="text-align:right; font-weight:bold; margin-top:8px; margin-bottom:0;">Total Cliente: ${p.total.toFixed(2)}€</p>
                 </div>
             `;
         });
 
         document.getElementById('pdf-total-dia').innerText = totalGeneralDia.toFixed(2);
 
-        // Disparar la descarga del PDF unificado
+        // Exportar a PDF
         const elementoPDF = document.getElementById('pdf-template');
         elementoPDF.style.display = 'block';
 
         const opciones = {
             margin:       12,
-            filename:     `Pedidos_Dia_${fechaFiltro}.pdf`,
+            filename:     `Pedidos_Dia_${fechaFormateadaSeleccionada}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2 },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -540,7 +670,7 @@
         });
     }
 
-    // Inicializaciones básicas
+    // Cargas iniciales básicas
     mostrarClientes();
     mostrarProductos();
     cargarDatosEnPedido();
