@@ -185,7 +185,7 @@
         tbody.innerHTML = '';
         if(clientes.length === 0) { tbody.innerHTML = '<tr><td colspan="3">No hay clientes.</td></tr>'; return; }
         clientes.forEach((c, idx) => {
-            tbody.innerHTML += `<tr><td><strong>${c.nombre}</strong></td><td>${c.direccion}</td><td style="text-align:center;"><button class="btn-action btn-delete" onclick="eliminarCliente(${idx})">❌</button></td></tr>`;
+            tbody.innerHTML += '<tr><td><strong>' + c.nombre + '</strong></td><td>' + c.direccion + '</td><td style="text-align:center;"><button class="btn-action btn-delete" onclick="eliminarCliente(' + idx + ')">❌</button></td></tr>';
         });
     }
     function eliminarCliente(idx) {
@@ -216,11 +216,11 @@
         tbody.innerHTML = '';
         if(productos.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No hay productos.</td></tr>'; return; }
         productos.forEach((p, idx) => {
-            tbody.innerHTML += `<tr><td><strong>${p.nombre}</strong></td><td>${p.unidad}</td><td><input type="number" class="input-table-edit" id="inline-precio-${idx}" value="${p.precio.toFixed(2)}" step="0.01"><button class="btn-action btn-save-inline" onclick="actualizarPrecioBase(${idx})">💾</button></td><td style="text-align:center;"><button class="btn-action btn-delete" onclick="eliminarProducto(${idx})">❌</button></td></tr>`;
+            tbody.innerHTML += '<tr><td><strong>' + p.nombre + '</strong></td><td>' + p.unidad + '</td><td><input type="number" class="input-table-edit" id="inline-precio-' + idx + '" value="' + p.precio.toFixed(2) + '" step="0.01"><button class="btn-action btn-save-inline" onclick="actualizarPrecioBase(' + idx + ')">💾</button></td><td style="text-align:center;"><button class="btn-action btn-delete" onclick="eliminarProducto(' + idx + ')">❌</button></td></tr>';
         });
     }
     function actualizarPrecioBase(idx) {
-        const nuevoPrecio = parseFloat(document.getElementById(`inline-precio-${idx}`).value);
+        const nuevoPrecio = parseFloat(document.getElementById('inline-precio-' + idx).value);
         if(isNaN(nuevoPrecio)) return;
         const productos = JSON.parse(localStorage.getItem('productos'));
         productos[idx].precio = nuevoPrecio;
@@ -242,11 +242,11 @@
         const productos = JSON.parse(localStorage.getItem('productos'));
         const selectCli = document.getElementById('ped-cliente');
         selectCli.innerHTML = '<option value="">-- Elegir Cliente --</option>';
-        clientes.forEach((c, index) => { selectCli.innerHTML += `<option value="${index}">${c.nombre}</option>`; });
+        clientes.forEach((c, index) => { selectCli.innerHTML += '<option value="' + index + '">' + c.nombre + '</option>'; });
         const listaProd = document.getElementById('lista-productos-pedido');
         listaProd.innerHTML = '';
         productos.forEach((p, index) => {
-            listaProd.innerHTML += `<div class="product-row" data-index="${index}"><div class="product-info">${p.nombre} (${p.unidad})</div><div class="product-inputs"><div class="input-inline"><label>Cantidad:</label><input type="number" class="ped-cant" value="0" min="0"></div><div class="input-inline"><label>Precio (€):</label><input type="number" class="ped-prec-edit" value="${p.precio.toFixed(2)}" step="0.01"></div></div></div>`;
+            listaProd.innerHTML += '<div class="product-row" data-index="' + index + '"><div class="product-info">' + p.nombre + ' (' + p.unidad + ')</div><div class="product-inputs"><div class="input-inline"><label>Cantidad:</label><input type="number" class="ped-cant" value="0" min="0"></div><div class="input-inline"><label>Precio (€):</label><input type="number" class="ped-prec-edit" value="' + p.precio.toFixed(2) + '" step="0.01"></div></div></div>';
         });
     }
     function actualizarDireccionPedido() {
@@ -276,7 +276,7 @@
         });
         if(itemsPedido.length === 0) return alert("Pon cantidades.");
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
-        historial.push({ fecha, clienteNombre: clienteSel.nombre, clienteDireccion: clienteSel.direccion, items: itemsPedido, total: totalPedido });
+        historial.push({ fecha: fecha, clienteNombre: clienteSel.nombre, clienteDireccion: clienteSel.direccion, items: itemsPedido, total: totalPedido });
         localStorage.setItem('historial_pedidos', JSON.stringify(historial));
         alert("Pedido guardado.");
         cargarDatosEnPedido();
@@ -291,27 +291,27 @@
         grid.innerHTML = '';
         const ano = fechaCalendarioActual.getFullYear();
         const mes = fechaCalendarioActual.getMonth();
-        document.getElementById('calendar-mes-ano').innerText = `${nombresMeses[mes]} ${ano}`;
-        ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].forEach(d => { grid.innerHTML += `<div class="calendar-day-name">${d}</div>`; });
+        document.getElementById('calendar-mes-ano').innerText = nombresMeses[mes] + ' ' + ano;
+        ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].forEach(d => { grid.innerHTML += '<div class="calendar-day-name">' + d + '</div>'; });
         let primerDia = new Date(ano, mes, 1).getDay();
         if(primerDia === 0) primerDia = 7;
-        for (let i = 1; i < primerDia; i++) { grid.innerHTML += `<div class="calendar-day empty"></div>`; }
+        for (let i = 1; i < primerDia; i++) { grid.innerHTML += '<div class="calendar-day empty"></div>'; }
         const totalDias = new Date(ano, mes + 1, 0).getDate();
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         for (let dia = 1; dia <= totalDias; dia++) {
             const mm = (mes + 1) < 10 ? '0' + (mes + 1) : (mes + 1);
             const dd = dia < 10 ? '0' + dia : dia;
-            const fStr = `${ano}-${mm}-${dd}`;
+            const fStr = ano + '-' + mm + '-' + dd;
             const pEseDia = historial.filter(p => p.fecha === fStr);
-            let bHtml = pEseDia.length > 0 ? `<span class="badge-pedidos">${pEseDia.length} ped</span>` : '';
-            grid.innerHTML += `<div class="calendar-day" id="cal-day-${dia}" onclick="seleccionarDia('${fStr}', ${dia})"><span>${dia}</span>${bHtml}</div>`;
+            let bHtml = pEseDia.length > 0 ? '<span class="badge-pedidos">' + pEseDia.length + ' ped</span>' : '';
+            grid.innerHTML += '<div class="calendar-day" id="cal-day-' + dia + '" onclick="seleccionarDia(\'' + fStr + '\', ' + dia + ')"><span>' + dia + '</span>' + bHtml + '</div>';
         }
     }
 
     function seleccionarDia(fStr, numDia) {
         fechaFormateadaSeleccionada = fStr;
         document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
-        if(document.getElementById(`cal-day-${numDia}`)) document.getElementById(`cal-day-${numDia}`).classList.add('selected');
+        if(document.getElementById('cal-day-' + numDia)) document.getElementById('cal-day-' + numDia).classList.add('selected');
         refrescarListaPedidosDia(fStr, numDia);
     }
 
@@ -319,44 +319,34 @@
         const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
         const pedidosDelDia = historial.filter(p => p.fecha === fStr);
         const lista = document.getElementById('info-lista-pedidos');
-        document.getElementById('info-titulo-fecha').innerText = `Pedidos para el día ${numDia} de ${nombresMeses[fechaCalendarioActual.getMonth()]}`;
+        document.getElementById('info-titulo-fecha').innerText = 'Pedidos para el día ' + numDia + ' de ' + nombresMeses[fechaCalendarioActual.getMonth()];
         lista.innerHTML = '';
         
         if (pedidosDelDia.length === 0) {
-            lista.innerHTML = `<p style="color:#777;">No hay pedidos en este día.</p>`;
+            lista.innerHTML = '<p style="color:#777;">No hay pedidos en este día.</p>';
         } else {
             pedidosDelDia.forEach(p => {
                 let itemsList = '';
-                p.items.forEach(i => { itemsList += `<li>${i.cantidad} ${i.unit} de <strong>${i.nombre}</strong> a ${i.precio.toFixed(2)}€</li>`; });
+                p.items.forEach(i => { itemsList += '<li>' + i.cantidad + ' ' + i.unit + ' de <strong>' + i.nombre + '</strong> a ' + i.precio.toFixed(2) + '€</li>'; });
                 
-                lista.innerHTML += `
-                    <div class="pedido-dia-item">
-                        <div class="pedido-dia-info">
-                            <strong>🏪 ${p.clienteNombre}</strong> (${p.total.toFixed(2)}€)
-                            <ul style="margin:5px 0 0 15px; padding:0; font-size:14px; color:#444;">${itemsList}</ul>
-                        </div>
-                        <div>
-                            <button class="btn-cruz-eliminar" onclick="eliminarPedidoDefinitivo('${p.clienteNombre}', '${fStr}', ${numDia})">❌</button>
-                        </div>
-                    </div>
-                `;
+                lista.innerHTML += '<div class="pedido-dia-item"><div class="pedido-dia-info"><strong>🏪 ' + p.clienteNombre + '</strong> (' + p.total.toFixed(2) + '€)<ul style="margin:5px 0 0 15px; padding:0; font-size:14px; color:#444;">' + itemsList + '</ul></div><div><button class="btn-cruz-eliminar" onclick="eliminarPedidoDefinitivo(\'' + p.clienteNombre + '\', \'' + fStr + '\', ' + numDia + ')">❌</button></div></div>';
             });
         }
         document.getElementById('dia-seleccionado-info').style.display = 'block';
     }
 
     function eliminarPedidoDefinitivo(cliente, fStr, numDia) {
-        if(confirm(`¿Quieres borrar el pedido de ${cliente}?`)) {
+        if(confirm('¿Quieres borrar el pedido de ' + cliente + '?')) {
             let historial = JSON.parse(localStorage.getItem('historial_pedidos'));
             historial = historial.filter(p => !(p.fecha === fStr && p.clienteNombre === cliente));
             localStorage.setItem('historial_pedidos', JSON.stringify(historial));
             renderizarCalendarioVisual();
             refrescarListaPedidosDia(fStr, numDia);
-            if(document.getElementById(`cal-day-${numDia}`)) document.getElementById(`cal-day-${numDia}`).classList.add('selected');
+            if(document.getElementById('cal-day-' + numDia)) document.getElementById('cal-day-' + numDia).classList.add('selected');
         }
     }
 
-    // SOLUCIÓN RADICAL: RENDERIZADO DESDE TEXTO DIRECTO EN MEMORIA (INMUNIZADO PARA MÓVILES)
+    // ELIMINACIÓN DE RIESGOS: REESCRITURA COMPLETA USANDO CONCATENACIÓN CLÁSICA (ANTI-PANTALLA EN BLANCO)
     function descargarPdfDiaSeleccionado() {
         if (!fechaFormateadaSeleccionada) return alert("Selecciona primero un día en el calendario.");
 
@@ -367,64 +357,50 @@
         const fechaBonita = fechaFormateadaSeleccionada.split('-').reverse().join('/');
         let totalGeneralDia = 0;
 
-        // Construcción limpia del documento como una String de HTML pura
-        let stringHtmlParaPdf = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff; width: 680px; margin: 0 auto; box-sizing: border-box;">
-                <h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 10px; font-size: 24px; font-weight: bold; text-transform: uppercase;">Hoja de Preparación de Pedidos (Almacén)</h1>
-                <h3 style="text-align: center; margin-top: 0; margin-bottom: 30px; color: #444; font-size: 15px;">FECHA DE REPARTO: ${fechaBonita}</h3>
-        `;
+        // Construcción mediante concatenación simple y segura, sin saltos de línea invisibles que rompan los smartphones
+        let htmlFinal = '<div style="font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff; width: 660px; margin: 0 auto; box-sizing: border-box;">';
+        htmlFinal += '<h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 10px; font-size: 24px; font-weight: bold; text-transform: uppercase;">Hoja de Preparación de Pedidos (Almacén)</h1>';
+        htmlFinal += '<h3 style="text-align: center; margin-top: 0; margin-bottom: 30px; color: #444; font-size: 15px;">FECHA DE REPARTO: ' + fechaBonita + '</h3>';
 
         pedidosDelDia.forEach(p => {
             totalGeneralDia += p.total;
             let lineasProductos = '';
             
             p.items.forEach(i => {
-                lineasProductos += `
-                    <div style="margin-bottom: 8px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
-                        <span style="text-align: left;">[ ] &nbsp; <strong>${i.cantidad} ${i.unit}</strong> &nbsp; — &nbsp; ${i.nombre} <span style="color: #555; font-size: 13px;">(a ${i.precio.toFixed(2)}€)</span></span>
-                        <span style="font-weight: bold; font-size: 15px; text-align: right; white-space: nowrap;">${i.subtotal.toFixed(2)} €</span>
-                    </div>
-                `;
+                lineasProductos += '<div style="margin-bottom: 8px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">';
+                lineasProductos += '<span style="text-align: left;">[ ] &nbsp; <strong>' + i.cantidad + ' ' + i.unit + '</strong> &nbsp; — &nbsp; ' + i.nombre + ' <span style="color: #555; font-size: 13px;">(a ' + i.precio.toFixed(2) + '€)</span></span>';
+                lineasProductos += '<span style="font-weight: bold; font-size: 15px; text-align: right; white-space: nowrap;">' + i.subtotal.toFixed(2) + ' €</span>';
+                lineasProductos += '</div>';
             });
 
-            stringHtmlParaPdf += `
-                <div style="margin-bottom: 25px; background: #fff; page-break-inside: avoid; border: 2px solid #000; padding: 15px; border-radius: 6px; box-sizing: border-box;">
-                    <h2 style="margin: 0 0 5px 0; font-size: 17px; color: #8b0000; font-weight: bold; text-transform: uppercase;">CLIENTE: ${p.clienteNombre}</h2>
-                    <p style="margin: 0 0 15px 0; font-size: 14px; color: #333;"><strong>Dirección:</strong> ${p.clienteDireccion}</p>
-                    
-                    <div style="margin-top: 10px; margin-bottom: 10px;">
-                        ${lineasProductos}
-                    </div>
-                    
-                    <div style="text-align: right; font-size: 15px; font-weight: bold; margin-top: 10px; padding-top: 5px; border-top: 1px solid #000;">Total Cliente: ${p.total.toFixed(2)} €</div>
-                </div>
-            `;
+            htmlFinal += '<div style="margin-bottom: 25px; background: #fff; border: 2px solid #000; padding: 15px; border-radius: 6px; box-sizing: border-box;">';
+            htmlFinal += '<h2 style="margin: 0 0 5px 0; font-size: 17px; color: #8b0000; font-weight: bold; text-transform: uppercase;">CLIENTE: ' + p.clienteNombre + '</h2>';
+            htmlFinal += '<p style="margin: 0 0 15px 0; font-size: 14px; color: #333;"><strong>Dirección:</strong> ' + p.clienteDireccion + '</p>';
+            htmlFinal += '<div style="margin-top: 10px; margin-bottom: 10px;">' + lineasProductos + '</div>';
+            htmlFinal += '<div style="text-align: right; font-size: 15px; font-weight: bold; margin-top: 10px; padding-top: 5px; border-top: 1px solid #000;">Total Cliente: ' + p.total.toFixed(2) + ' €</div>';
+            htmlFinal += '</div>';
         });
 
-        stringHtmlParaPdf += `
-                <div style="text-align: right; margin-top: 30px; border-top: 4px double #000; padding-top: 12px;">
-                    <span style="font-size: 21px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ${totalGeneralDia.toFixed(2)} €</span>
-                </div>
-            </div>
-        `;
+        htmlFinal += '<div style="text-align: right; margin-top: 30px; border-top: 4px double #000; padding-top: 12px;">';
+        htmlFinal += '<span style="font-size: 21px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ' + totalGeneralDia.toFixed(2) + ' €</span>';
+        htmlFinal += '</div></div>';
 
-        // Opciones optimizadas. Pasamos jsPDF en formato string directamente
+        // Configuración directa y ultraligera para la librería html2pdf
         const opciones = {
             margin:       10,
-            filename:     `Planilla_Reparto_${fechaFormateadaSeleccionada}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
+            filename:     'Planilla_Reparto_' + fechaFormateadaSeleccionada + '.pdf',
+            image:        { type: 'jpeg', quality: 0.95 },
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true,
-                logging: false,
-                width: 720
+                logging: false
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // LLAMADA CLAVE: html2pdf ya NO lee la pantalla del móvil, lee directamente la variable de texto "stringHtmlParaPdf"
-        html2pdf().from(stringHtmlParaPdf).set(opciones).save().catch(err => {
-            alert("Error al procesar el archivo PDF: " + err.message);
+        // Generación instantánea
+        html2pdf().from(htmlFinal).set(opciones).save().catch(err => {
+            alert("Error: " + err.message);
         });
     }
 
