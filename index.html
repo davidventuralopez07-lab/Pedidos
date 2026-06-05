@@ -1,109 +1,79 @@
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Comercial Cárnico</title>
-    <title>Gestor Cárnico</title>
+    <title>Gestión Comercial Cárnica</title>
     <style>
-        :root { --primary: #8b0000; }
-        body { font-family: sans-serif; background: #eee; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; background: #f4f4f4; padding: 10px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .tab-btn { padding: 10px; cursor: pointer; border: none; background: #ddd; margin-right: 5px; border-radius: 5px; }
+        .tab-btn.active { background: #8b0000; color: white; }
         .panel { display: none; } .panel.active { display: block; }
-        .tab-btn { padding: 10px; cursor: pointer; border: none; background: #ddd; border-radius: 5px; }
-        .tab-btn.active { background: var(--primary); color: white; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; }
-        button.btn { background: #27ae60; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: var(--primary); color: white; }
-        .import-box { display: none; background: #eef; padding: 15px; border-radius: 8px; border: 1px dashed #3498db; margin-bottom: 15px; }
-        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
-        .box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        input, textarea, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #8b0000; color: white; border: none; cursor: pointer; font-weight: bold; }
+        textarea { width: 100%; height: 120px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; margin-top: 5px; }
+        .btn-green { background: #27ae60; }
+        .btn-red { background: #e74c3c; }
+        .btn-blue { background: #2980b9; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🥩 Gestor Comercial</h1>
-    <div style="display:flex; gap:5px; margin-bottom:20px;">
-        <button class="tab-btn active" id="btn-pedidos" onclick="switchTab('pedidos')">🛒 Pedidos</button>
-        <button class="tab-btn" id="btn-productos" onclick="switchTab('productos')">📦 Productos</button>
+    <h2>🥩 Gestión Comercial</h2>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="show('pedidos')">🛒 Pedidos</button>
+        <button class="tab-btn" onclick="show('clientes')">👥 Clientes</button>
+        <button class="tab-btn" onclick="show('productos')">📦 Productos</button>
     </div>
 
     <div id="panel-pedidos" class="panel active">
-        <label>Fecha:</label><input type="date" id="ped-fecha">
-        <label>Cliente:</label><select id="ped-cliente"></select>
-        <h4>Productos:</h4>
-        <div id="lista-pedidos-productos"></div>
-        <button class="btn" onclick="guardarPedido()">💾 Guardar Pedido</button>
+        <h3>Panel de Pedidos</h3>
+        <button class="btn btn-blue" onclick="window.print()">🖨️ Imprimir Pedido</button>
+    </div>
+
+    <div id="panel-clientes" class="panel">
+        <h3>Gestión de Clientes</h3>
+        <textarea id="data-cli" placeholder="Nombre,Dirección"></textarea>
+        <button class="btn btn-green" onclick="guardar('clientes')">💾 Guardar</button>
+        <button class="btn btn-red" onclick="borrar('clientes')">🗑️ BORRAR TODOS LOS CLIENTES</button>
     </div>
 
     <div id="panel-productos" class="panel">
-        <button class="btn" style="background:#3498db" onclick="document.getElementById('imp-prod').style.display='block'">📥 Importar Masivo</button>
-        <div id="imp-prod" class="import-box">
-            <textarea id="txt-prod" rows="5" placeholder="Nombre,Formato,PrecioKilo,PesoPorUnidad&#10;Ej: Longanizas,Cajas,5.50,2"></textarea>
-            <button class="btn" onclick="importarProductos()">⚡ Cargar</button>
-        </div>
-        <table id="tabla-prod"><thead><tr><th>Prod</th><th>Formato</th><th>Precio/Kg</th><th>Peso/Unidad</th></tr></thead><tbody></tbody></table>
+        <h3>Gestión de Productos</h3>
+        <textarea id="data-prod" placeholder="Nombre,Formato,Precio,Peso"></textarea>
+        <button class="btn btn-green" onclick="guardar('productos')">💾 Guardar</button>
+        <button class="btn btn-red" onclick="borrar('productos')">🗑️ BORRAR TODOS LOS PRODUCTOS</button>
     </div>
-<div class="box">
-    <h2>Gestor Comercial</h2>
-    <h3>📦 Importar Productos</h3>
-    <textarea id="lista" rows="6" placeholder="Formato: Nombre,Formato,Precio,Peso&#10;Ej: Longanizas,Cajas,5.50,2"></textarea>
-    <button onclick="guardar()">Cargar Productos</button>
-    <p id="msg"></p>
-    <button style="background:#27ae60" onclick="window.print()">🖨️ Imprimir Hoja</button>
 </div>
 
 <script>
-    // Inicialización simple
-    let productos = JSON.parse(localStorage.getItem('productos')) || [];
-    let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-    let pedidos = JSON.parse(localStorage.getItem('historial')) || [];
-
-    function switchTab(t) {
+    function show(id) {
         document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('panel-'+t).classList.add('active');
-        document.getElementById('btn-'+t).classList.add('active');
+        document.getElementById('panel-'+id).classList.add('active');
+        event.target.classList.add('active');
     }
 
-    function importarProductos() {
-        const lines = document.getElementById('txt-prod').value.split('\n');
-        lines.forEach(line => {
-            const [nombre, unidad, precio, peso] = line.split(',');
-            if(nombre) productos.push({nombre, unidad, precio: parseFloat(precio), peso: parseFloat(peso) || 1});
-        });
-        localStorage.setItem('productos', JSON.stringify(productos));
-        renderProductos();
-        alert("Importado correctamente.");
-    function guardar() {
-        const texto = document.getElementById('lista').value;
-        if(!texto) return alert("Pega los datos primero");
-        localStorage.setItem('productos_carnico', texto);
-        document.getElementById('msg').innerText = "✅ Productos guardados en la memoria del móvil.";
+    function guardar(key) {
+        const id = (key === 'productos') ? 'data-prod' : 'data-cli';
+        localStorage.setItem(key, document.getElementById(id).value);
+        alert("Guardado correctamente.");
     }
 
-    function renderProductos() {
-        const tbody = document.querySelector('#tabla-prod tbody');
-        tbody.innerHTML = productos.map(p => `<tr><td>${p.nombre}</td><td>${p.unidad}</td><td>${p.precio}€</td><td>${p.peso}kg</td></tr>`).join('');
+    function borrar(key) {
+        if(confirm("¿Estás SEGURO de que quieres borrar toda la base de datos?")) {
+            localStorage.removeItem(key);
+            document.getElementById(key === 'productos' ? 'data-prod' : 'data-cli').value = "";
+            alert("Borrado realizado.");
+        }
     }
 
-    function guardarPedido() {
-        // Al guardar, el cálculo es: Cantidad * Peso * Precio
-        // ... (Tu lógica de guardado que desarrollamos antes)
-        alert("Pedido guardado. (El sistema ha calculado el peso total según las cajas/unidades)");
-    }
-
-    // Cargas iniciales
-    document.getElementById('ped-fecha').valueAsDate = new Date();
-    renderProductos();
-    
-    // Al cargar la página, recuperamos
-    const guardado = localStorage.getItem('productos_carnico');
-    if(guardado) document.getElementById('lista').value = guardado;
+    window.onload = () => {
+        document.getElementById('data-prod').value = localStorage.getItem('productos') || "";
+        document.getElementById('data-cli').value = localStorage.getItem('clientes') || "";
+    };
 </script>
 </body>
 </html>
