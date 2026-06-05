@@ -1,61 +1,469 @@
-<!DOCTYPE html>
+AHORA TENGO ESTE CODIGO <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Comercial Cárnico</title>
-    <style>
-        :root { --primary: #8b0000; }
-        body { font-family: sans-serif; background: #eee; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; margin-top: 10px; }
-        .btn-green { background: #27ae60; }
-        .btn-red { background: #e74c3c; }
-        .btn-blue { background: #2980b9; }
-        textarea { width: 100%; height: 120px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Pedidos - Comercial Cárnico</title>
+    <style>
+        :root { --primary: #8b0000; --dark: #222; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #eee; color: var(--dark); }
+        .overlay { padding: 20px; }
+        header { text-align: center; margin-bottom: 25px; }
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 14px 10px; background: #e0e0e0; border: none; font-weight: bold; font-size: 15px; cursor: pointer; border-radius: 8px; text-align: center; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
+        textarea { resize: vertical; font-family: monospace; }
+        button.btn-submit { background: #27ae60; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 5px; }
+        .btn-import { background: #3498db; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: var(--primary); color: white; }
+        .product-row { background: #fdfdfd; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; }
+        .product-info { font-weight: bold; font-size: 16px; margin-bottom: 8px; }
+        .product-inputs { display: flex; gap: 10px; align-items: center; }
+        .input-inline { flex: 1; }
+        .btn-action { border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-delete { background: #e74c3c; color: white; }
+        .btn-save-inline { background: #3498db; color: white; margin-left: 5px; }
+        .input-table-edit { width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 6px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f2f2f2; padding: 10px; border-radius: 8px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .calendar-day-name { font-weight: bold; font-size: 12px; color: #666; padding: 5px 0; }
+        .calendar-day { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 10px 2px; cursor: pointer; font-weight: bold; min-height: 45px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
+        .calendar-day.empty { background: #f9f9f9; border: none; cursor: default; }
+        .calendar-day.selected { border: 2px solid var(--primary); background: #fff0f0; }
+        .badge-pedidos { background: #27ae60; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-top: 3px; }
+        .day-btn-nav { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .dia-info-box { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-top: 20px; }
+        .import-box { background: #f9f9f9; border: 1px dashed #3498db; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        
+        .pedido-dia-item {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            border-bottom: 2px solid #ddd !important;
+            padding: 15px 0 !important;
+        }
+        .pedido-dia-info { flex: 1; }
+        .btn-cruz-eliminar {
+            background: #e74c3c !important;
+            color: white !important;
+            border: none !important;
+            padding: 12px 16px !important;
+            border-radius: 8px !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+        }
+
+        @media print {
+            body * { display: none !important; }
+            #seccion-impresion-bloque, #seccion-impresion-bloque * { display: block !important; }
+            #seccion-impresion-bloque { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
+            .flex-print { display: flex !important; justify-content: space-between !important; align-items: center !important; }
+        }
+    </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>🥩 Gestión Comercial</h2>
-    
-    <h3>📦 Productos</h3>
-    <textarea id="data-prod" placeholder="Nombre,Formato,Precio,Peso"></textarea>
-    <button class="btn btn-green" onclick="guardar('productos')">💾 Guardar Productos</button>
-    <button class="btn btn-red" onclick="borrar('productos')">🗑️ BORRAR TODOS LOS PRODUCTOS</button>
+<div class="overlay">
+    <header>
+        <h1>🥩 Panel Comercial - Gestión de Carnes</h1>
+    </header>
 
-    <hr>
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" id="btn-tab-pedidos" onclick="switchTab('pedidos')">🛒 Pedido</button>
+            <button class="tab-btn" id="btn-tab-calendario" onclick="switchTab('calendario')">📅 Calendario</button>
+            <button class="tab-btn" id="btn-tab-clientes" onclick="switchTab('clientes')">👥 Clientes</button>
+            <button class="tab-btn" id="btn-tab-productos" onclick="switchTab('productos')">📦 Productos</button>
+        </div>
 
-    <h3>👥 Clientes</h3>
-    <textarea id="data-cli" placeholder="Nombre,Dirección"></textarea>
-    <button class="btn btn-green" onclick="guardar('clientes')">💾 Guardar Clientes</button>
-    <button class="btn btn-red" onclick="borrar('clientes')">🗑️ BORRAR TODOS LOS CLIENTES</button>
+        <div id="panel-pedidos" class="panel active">
+            <h3>🛒 Formulario de Pedido</h3>
+            <div class="form-group">
+                <label>Fecha programada para la entrega:</label>
+                <input type="date" id="ped-fecha">
+            </div>
+            <div class="form-group">
+                <label>Selecciona el Cliente:</label>
+                <select id="ped-cliente" onchange="actualizarDireccionPedido()">
+                    <option value="">-- Elegir Cliente --</option>
+                </select>
+            </div>
+            <p id="ped-direccion-muestra" style="font-style: italic; color: #b01a1a; font-weight: bold; margin-bottom: 20px;"></p>
+            <h4>Añade las cantidades y modifica precios si lo necesitas:</h4>
+            <div id="lista-productos-pedido"></div>
+            <button class="btn-submit" style="background: #27ae60; margin-top: 20px; padding: 16px;" onclick="guardarPedidoEnCalendario()">💾 Guardar Pedido en el Calendario</button>
+        </div>
 
-    <hr>
-    <button class="btn btn-blue" onclick="window.print()">🖨️ Generar Hoja de Pedido</button>
+        <div id="panel-calendario" class="panel">
+            <h3>📅 Calendario de Entregas</h3>
+            <p style="font-size: 14px; color: #555; margin-top: -10px;">Haz clic en cualquier día para ver sus pedidos y generar la hoja de reparto.</p>
+            <div class="calendar-header">
+                <button class="day-btn-nav" onclick="cambiarMes(-1)">◀ Ant</button>
+                <h4 id="calendar-mes-ano" style="margin: 0; font-size: 18px; color: var(--primary);"></h4>
+                <button class="day-btn-nav" onclick="cambiarMes(1)">Sig ▶</button>
+            </div>
+            <div class="calendar-grid" id="calendar-grid-body"></div>
+            <div id="dia-seleccionado-info" class="dia-info-box" style="display: none;">
+                <h3 style="margin-top: 0; color: var(--primary);" id="info-titulo-fecha">Pedidos del día</h3>
+                <div id="info-lista-pedidos"></div>
+                <button class="btn-submit" style="background: #e67e22; padding: 14px; margin-top: 15px;" onclick="generarImpresionNativa()">📄 Imprimir / Guardar Hoja de Reparto en PDF</button>
+            </div>
+        </div>
+
+        <div id="panel-clientes" class="panel">
+            <h3>👥 Gestión de Clientes</h3>
+            <button class="btn-submit btn-import" onclick="toggleImportBox('import-clientes')">📥 Importar Lista en Masa (Excel / Texto)</button>
+            
+            <div id="import-clientes" class="import-box">
+                <label>Pega aquí tu lista de clientes (Formato: Nombre,Dirección):</label>
+                <textarea id="txt-import-clientes" rows="6" placeholder="Ejemplo:&#10;Carnicería Paco,Calle Cordón 23&#10;Supermercado Alme,Av. Mayor 45"></textarea>
+                <button class="btn-submit" style="background:#3498db; margin-top:10px;" onclick="procesarImportacionClientes()">⚡ Cargar Clientes en Bloque</button>
+            </div>
+
+            <div style="background:#fff; border:1px solid #ccc; padding:12px; border-radius:8px; margin-bottom:20px;">
+                <h4>Añadir Uno Solo:</h4>
+                <div class="form-group">
+                    <input type="text" id="cli-nombre" placeholder="Nombre del Cliente">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="cli-direccion" placeholder="Dirección Completa">
+                </div>
+                <button class="btn-submit" onclick="guardarCliente()">💾 Guardar un Cliente</button>
+            </div>
+
+            <h3>Clientes Registrados</h3>
+            <div style="overflow-x: auto;"><table id="tabla-clientes"><thead><tr><th>Cliente</th><th>Dirección</th><th style="text-align:center;">Quitar</th></tr></thead><tbody></tbody></table></div>
+        </div>
+
+        <div id="panel-productos" class="panel">
+            <h3>📦 Catálogo de Productos</h3>
+            <button class="btn-submit btn-import" onclick="toggleImportBox('import-productos')">📥 Importar Catálogo en Masa (Excel / Texto)</button>
+            
+            <div id="import-productos" class="import-box">
+                <label>Pega aquí tus productos (Formato: Nombre,Formato,Precio Base):</label>
+                <textarea id="txt-import-productos" rows="6" placeholder="Ejemplo:&#10;Longanizas,Kilos,5.50&#10;Solomillo,Kilos,12.00&#10;Costillar,Cajas,45.00"></textarea>
+                <button class="btn-submit" style="background:#3498db; margin-top:10px;" onclick="procesarImportacionProductos()">⚡ Cargar Productos en Bloque</button>
+            </div>
+
+            <div style="background:#fff; border:1px solid #ccc; padding:12px; border-radius:8px; margin-bottom:20px;">
+                <h4>Añadir Uno Solo:</h4>
+                <div class="form-group"><input type="text" id="prod-nombre" placeholder="Nombre del Producto"></div>
+                <div class="form-group">
+                    <select id="prod-unidad"><option value="Kilos">Kilos (kg)</option><option value="Cajas">Cajas</option><option value="Unidades">Unidades (uds)</option></select>
+                </div>
+                <div class="form-group"><input type="number" id="prod-precio" step="0.01" placeholder="Precio Base (€)"></div>
+                <button class="btn-submit" onclick="guardarProducto()">💾 Guardar un Producto</button>
+            </div>
+
+            <h3>Catálogo Actual</h3>
+            <div style="overflow-x: auto;"><table id="tabla-productos"><thead><tr><th>Producto</th><th>Formato</th><th>Precio Base (€)</th><th style="text-align:center;">Quitar</th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </div>
 </div>
 
+<div id="seccion-impresion-bloque" style="display: none;"></div>
+
 <script>
-    // Al cargar, ponemos lo que hay en memoria
-    window.onload = () => {
-        document.getElementById('data-prod').value = localStorage.getItem('productos') || "";
-        document.getElementById('data-cli').value = localStorage.getItem('clientes') || "";
-    };
+    if (!localStorage.getItem('clientes')) localStorage.setItem('clientes', JSON.stringify([]));
+    if (!localStorage.getItem('productos')) localStorage.setItem('productos', JSON.stringify([]));
+    if (!localStorage.getItem('historial_pedidos')) localStorage.setItem('historial_pedidos', JSON.stringify([]));
 
-    function guardar(key) {
-        const val = document.getElementById(key === 'productos' ? 'data-prod' : 'data-cli').value;
-        localStorage.setItem(key, val);
-        alert("¡Datos guardados!");
-    }
+    document.getElementById('ped-fecha').valueAsDate = new Date();
+    let fechaCalendarioActual = new Date();
+    let fechaFormateadaSeleccionada = "";
 
-    function borrar(key) {
-        if(confirm("¿Estás SEGURO de borrar toda la base de datos de " + key + "?")) {
-            localStorage.removeItem(key);
-            document.getElementById(key === 'productos' ? 'data-prod' : 'data-cli').value = "";
-            alert(key + " borrados correctamente.");
-        }
-    }
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+        document.getElementById(`btn-tab-${tabId}`).classList.add('active');
+        document.getElementById(`panel-${tabId}`).classList.add('active');
+        if(tabId === 'pedidos') cargarDatosEnPedido();
+        if(tabId === 'calendario') renderizarCalendarioVisual();
+        if(tabId === 'clientes') mostrarClientes();
+        if(tabId === 'productos') mostrarProductos();
+    }
+
+    function toggleImportBox(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // --- IMPORTACIÓN MASIVA ---
+    function procesarImportacionClientes() {
+        const texto = document.getElementById('txt-import-clientes').value.trim();
+        if(!texto) return alert("Pega algo primero.");
+        const lineas = texto.split('\n');
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        let cont = 0;
+        lineas.forEach(l => {
+            const partes = l.split(',');
+            if(partes.length >= 2) {
+                clientes.push({ nombre: partes[0].trim(), direccion: partes[1].trim() });
+                cont++;
+            }
+        });
+        localStorage.setItem('clientes', JSON.stringify(clientes));
+        document.getElementById('txt-import-clientes').value = '';
+        toggleImportBox('import-clientes');
+        mostrarClientes();
+        alert("Se han importado " + cont + " clientes correctamente.");
+    }
+
+    function procesarImportacionProductos() {
+        const texto = document.getElementById('txt-import-productos').value.trim();
+        if(!texto) return alert("Pega algo primero.");
+        const lineas = texto.split('\n');
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        let cont = 0;
+        lineas.forEach(l => {
+            const partes = l.split(',');
+            if(partes.length >= 3) {
+                const precioNum = parseFloat(partes[2].trim());
+                productos.push({ nombre: partes[0].trim(), unidad: partes[1].trim(), precio: isNaN(precioNum) ? 0 : precioNum });
+                cont++;
+            }
+        });
+        localStorage.setItem('productos', JSON.stringify(productos));
+        document.getElementById('txt-import-productos').value = '';
+        toggleImportBox('import-productos');
+        mostrarProductos();
+        alert("Se han importado " + cont + " productos correctamente.");
+    }
+
+    // --- CLIENTES ---
+    function guardarCliente() {
+        const nombre = document.getElementById('cli-nombre').value.trim();
+        const direccion = document.getElementById('cli-direccion').value.trim();
+        if(!nombre || !direccion) return alert('Introduce nombre y dirección.');
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        clientes.push({ nombre, direccion });
+        localStorage.setItem('clientes', JSON.stringify(clientes));
+        document.getElementById('cli-nombre').value = '';
+        document.getElementById('cli-direccion').value = '';
+        mostrarClientes();
+    }
+    function mostrarClientes() {
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        const tbody = document.querySelector('#tabla-clientes tbody');
+        tbody.innerHTML = '';
+        if(clientes.length === 0) { tbody.innerHTML = '<tr><td colspan="3">No hay clientes.</td></tr>'; return; }
+        clientes.forEach((c, idx) => {
+            tbody.innerHTML += '<tr><td><strong>' + c.nombre + '</strong></td><td>' + c.direccion + '</td><td style="text-align:center;"><button class="btn-action btn-delete" onclick="eliminarCliente(' + idx + ')">❌</button></td></tr>';
+        });
+    }
+    function eliminarCliente(idx) {
+        if(confirm("¿Eliminar cliente?")) {
+            const clientes = JSON.parse(localStorage.getItem('clientes'));
+            clientes.splice(idx, 1);
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+            mostrarClientes();
+        }
+    }
+
+    // --- PRODUCTOS ---
+    function guardarProducto() {
+        const nombre = document.getElementById('prod-nombre').value.trim();
+        const unidad = document.getElementById('prod-unidad').value;
+        const precio = parseFloat(document.getElementById('prod-precio').value);
+        if(!nombre || isNaN(precio)) return alert('Rellena los datos.');
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        productos.push({ nombre, unidad, precio });
+        localStorage.setItem('productos', JSON.stringify(productos));
+        document.getElementById('prod-nombre').value = '';
+        document.getElementById('prod-precio').value = '';
+        mostrarProductos();
+    }
+    function mostrarProductos() {
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        const tbody = document.querySelector('#tabla-productos tbody');
+        tbody.innerHTML = '';
+        if(productos.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No hay productos.</td></tr>'; return; }
+        productos.forEach((p, idx) => {
+            tbody.innerHTML += '<tr><td><strong>' + p.nombre + '</strong></td><td>' + p.unidad + '</td><td><input type="number" class="input-table-edit" id="inline-precio-' + idx + '" value="' + p.precio.toFixed(2) + '" step="0.01"><button class="btn-action btn-save-inline" onclick="actualizarPrecioBase(' + idx + ')">💾</button></td><td style="text-align:center;"><button class="btn-action btn-delete" onclick="eliminarProducto(' + idx + ')">❌</button></td></tr>';
+        });
+    }
+    function actualizarPrecioBase(idx) {
+        const nuevoPrecio = parseFloat(document.getElementById('inline-precio-' + idx).value);
+        if(isNaN(nuevoPrecio)) return;
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        productos[idx].precio = nuevoPrecio;
+        localStorage.setItem('productos', JSON.stringify(productos));
+        alert("Precio actualizado.");
+    }
+    function eliminarProducto(idx) {
+        if(confirm("¿Eliminar producto?")) {
+            const productos = JSON.parse(localStorage.getItem('productos'));
+            productos.splice(idx, 1);
+            localStorage.setItem('productos', JSON.stringify(productos));
+            mostrarProductos();
+        }
+    }
+
+    // --- PEDIDOS ---
+    function cargarDatosEnPedido() {
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        const selectCli = document.getElementById('ped-cliente');
+        selectCli.innerHTML = '<option value="">-- Elegir Cliente --</option>';
+        clientes.forEach((c, index) => { selectCli.innerHTML += '<option value="' + index + '">' + c.nombre + '</option>'; });
+        const listaProd = document.getElementById('lista-productos-pedido');
+        listaProd.innerHTML = '';
+        productos.forEach((p, index) => {
+            listaProd.innerHTML += '<div class="product-row" data-index="' + index + '"><div class="product-info">' + p.nombre + ' (' + p.unidad + ')</div><div class="product-inputs"><div class="input-inline"><label>Cantidad:</label><input type="number" class="ped-cant" value="0" min="0"></div><div class="input-inline"><label>Precio (€):</label><input type="number" class="ped-prec-edit" value="' + p.precio.toFixed(2) + '" step="0.01"></div></div></div>';
+        });
+    }
+    function actualizarDireccionPedido() {
+        const idx = document.getElementById('ped-cliente').value;
+        if(idx === "") { document.getElementById('ped-direccion-muestra').innerText = ""; return; }
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        document.getElementById('ped-direccion-muestra').innerText = "📍 Dirección: " + clientes[idx].direccion;
+    }
+    function guardarPedidoEnCalendario() {
+        const fecha = document.getElementById('ped-fecha').value;
+        const cliIdx = document.getElementById('ped-cliente').value;
+        if(cliIdx === "" || !fecha) return alert("Selecciona fecha y cliente.");
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        const clienteSel = clientes[cliIdx];
+        let itemsPedido = [];
+        let totalPedido = 0;
+        document.querySelectorAll('.product-row').forEach(f => {
+            const idx = f.getAttribute('data-index');
+            const cant = parseFloat(f.querySelector('.ped-cant').value);
+            const precioEspecial = parseFloat(f.querySelector('.ped-prec-edit').value);
+            if(cant > 0) {
+                const sub = cant * precioEspecial;
+                totalPedido += sub;
+                itemsPedido.push({ nombre: productos[idx].nombre, unit: productos[idx].unidad, cantidad: cant, precio: precioEspecial, subtotal: sub });
+            }
+        });
+        if(itemsPedido.length === 0) return alert("Pon cantidades.");
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        historial.push({ fecha: fecha, clienteNombre: clienteSel.nombre, clienteDireccion: clienteSel.direccion, items: itemsPedido, total: totalPedido });
+        localStorage.setItem('historial_pedidos', JSON.stringify(historial));
+        alert("Pedido guardado.");
+        cargarDatosEnPedido();
+    }
+
+    // --- CALENDARIO VISUAL ---
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    function cambiarMes(dir) { fechaCalendarioActual.setMonth(fechaCalendarioActual.getMonth() + dir); renderizarCalendarioVisual(); document.getElementById('dia-seleccionado-info').style.display = 'none'; }
+    
+    function renderizarCalendarioVisual() {
+        const grid = document.getElementById('calendar-grid-body');
+        grid.innerHTML = '';
+        const ano = fechaCalendarioActual.getFullYear();
+        const mes = fechaCalendarioActual.getMonth();
+        document.getElementById('calendar-mes-ano').innerText = nombresMeses[mes] + ' ' + ano;
+        ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].forEach(d => { grid.innerHTML += '<div class="calendar-day-name">' + d + '</div>'; });
+        let primerDia = new Date(ano, mes, 1).getDay();
+        if(primerDia === 0) primerDia = 7;
+        for (let i = 1; i < primerDia; i++) { grid.innerHTML += '<div class="calendar-day empty"></div>'; }
+        const totalDias = new Date(ano, mes + 1, 0).getDate();
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        for (let dia = 1; dia <= totalDias; dia++) {
+            const mm = (mes + 1) < 10 ? '0' + (mes + 1) : (mes + 1);
+            const dd = dia < 10 ? '0' + dia : dia;
+            const fStr = ano + '-' + mm + '-' + dd;
+            const pEseDia = historial.filter(p => p.fecha === fStr);
+            let bHtml = pEseDia.length > 0 ? '<span class="badge-pedidos">' + pEseDia.length + ' ped</span>' : '';
+            grid.innerHTML += '<div class="calendar-day" id="cal-day-' + dia + '" onclick="seleccionarDia(\'' + fStr + '\', ' + dia + ')"><span>' + dia + '</span>' + bHtml + '</div>';
+        }
+    }
+
+    function seleccionarDia(fStr, numDia) {
+        fechaFormateadaSeleccionada = fStr;
+        document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+        if(document.getElementById('cal-day-' + numDia)) document.getElementById('cal-day-' + numDia).classList.add('selected');
+        refrescarListaPedidosDia(fStr, numDia);
+    }
+
+    function refrescarListaPedidosDia(fStr, numDia) {
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        const pedidosDelDia = historial.filter(p => p.fecha === fStr);
+        const lista = document.getElementById('info-lista-pedidos');
+        document.getElementById('info-titulo-fecha').innerText = 'Pedidos para el día ' + numDia + ' de ' + nombresMeses[fechaCalendarioActual.getMonth()];
+        lista.innerHTML = '';
+        
+        if (pedidosDelDia.length === 0) {
+            lista.innerHTML = '<p style="color:#777;">No hay pedidos en este día.</p>';
+        } else {
+            pedidosDelDia.forEach(p => {
+                let itemsList = '';
+                p.items.forEach(i => { itemsList += '<li>' + i.cantidad + ' ' + i.unit + ' de <strong>' + i.nombre + '</strong> a ' + i.precio.toFixed(2) + '€</li>'; });
+                
+                lista.innerHTML += '<div class="pedido-dia-item"><div class="pedido-dia-info"><strong>🏪 ' + p.clienteNombre + '</strong> (' + p.total.toFixed(2) + '€)<ul style="margin:5px 0 0 15px; padding:0; font-size:14px; color:#444;">' + itemsList + '</ul></div><div><button class="btn-cruz-eliminar" onclick="eliminarPedidoDefinitivo(\'' + p.clienteNombre + '\', \'' + fStr + '\', ' + numDia + ')">❌</button></div></div>';
+            });
+        }
+        document.getElementById('dia-seleccionado-info').style.display = 'block';
+    }
+
+    function eliminarPedidoDefinitivo(cliente, fStr, numDia) {
+        if(confirm('¿Quieres borrar el pedido de ' + cliente + '?')) {
+            let historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+            historial = historial.filter(p => !(p.fecha === fStr && p.clienteNombre === cliente));
+            localStorage.setItem('historial_pedidos', JSON.stringify(historial));
+            renderizarCalendarioVisual();
+            refrescarListaPedidosDia(fStr, numDia);
+            if(document.getElementById('cal-day-' + numDia)) document.getElementById('cal-day-' + numDia).classList.add('selected');
+        }
+    }
+
+    // IMPRESIÓN NATIVA MULTIPLATAFORMA
+    function generarImpresionNativa() {
+        if (!fechaFormateadaSeleccionada) return alert("Selecciona primero un día.");
+
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        const pedidosDelDia = historial.filter(p => p.fecha === fechaFormateadaSeleccionada);
+        if(pedidosDelDia.length === 0) return alert("No hay pedidos para este día.");
+
+        const fechaBonita = fechaFormateadaSeleccionada.split('-').reverse().join('/');
+        let totalGeneralDia = 0;
+
+        let htmlFinal = '<div style="font-family: Arial, sans-serif; padding: 10px; color: #000; background: #fff; width: 100%; box-sizing: border-box;">';
+        htmlFinal += '<h1 style="color: #8b0000; text-align: center; border-bottom: 3px solid #8b0000; margin-bottom: 5px; padding-bottom: 10px; font-size: 22px; font-weight: bold; text-transform: uppercase;">Hoja de Preparación de Pedidos (Almacén)</h1>';
+        htmlFinal += '<h3 style="text-align: center; margin-top: 0; margin-bottom: 25px; color: #444; font-size: 15px;">FECHA DE REPARTO: ' + fechaBonita + '</h3>';
+
+        pedidosDelDia.forEach(p => {
+            totalGeneralDia += p.total;
+            let lineasProductos = '';
+            
+            p.items.forEach(i => {
+                lineasProductos += '<div class="flex-print" style="margin-bottom: 8px; font-size: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">';
+                lineasProductos += '<span>[ ] &nbsp; <strong>' + i.cantidad + ' ' + i.unit + '</strong> &nbsp; — &nbsp; ' + i.nombre + ' <span style="color: #555; font-size: 13px;">(a ' + i.precio.toFixed(2) + '€)</span></span>';
+                lineasProductos += '<span style="font-weight: bold;">' + i.subtotal.toFixed(2) + ' €</span>';
+                lineasProductos += '</div>';
+            });
+
+            htmlFinal += '<div style="margin-bottom: 25px; background: #fff; border: 2px solid #000; padding: 12px; border-radius: 6px; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box;">';
+            htmlFinal += '<h2 style="margin: 0 0 5px 0; font-size: 16px; color: #8b0000; font-weight: bold; text-transform: uppercase;">CLIENTE: ' + p.clienteNombre + '</h2>';
+            htmlFinal += '<p style="margin: 0 0 12px 0; font-size: 13px; color: #333;"><strong>Dirección:</strong> ' + p.clienteDireccion + '</p>';
+            htmlFinal += '<div style="margin-top: 8px; margin-bottom: 8px;">' + lineasProductos + '</div>';
+            htmlFinal += '<div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 8px; padding-top: 4px; border-top: 1px solid #000;">Total Cliente: ' + p.total.toFixed(2) + ' €</div>';
+            htmlFinal += '</div>';
+        });
+
+        htmlFinal += '<div style="text-align: right; margin-top: 25px; border-top: 4px double #000; padding-top: 10px;">';
+        htmlFinal += '<span style="font-size: 19px; font-weight: bold; color: #8b0000;">TOTAL GENERAL DEL DÍA: ' + totalGeneralDia.toFixed(2) + ' €</span>';
+        htmlFinal += '</div></div>';
+
+        const areaImpresion = document.getElementById('seccion-impresion-bloque');
+        areaImpresion.innerHTML = htmlFinal;
+
+        window.print();
+    }
+
+    mostrarClientes(); mostrarProductos(); cargarDatosEnPedido();
 </script>
 </body>
 </html>
