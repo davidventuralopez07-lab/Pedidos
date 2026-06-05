@@ -1,60 +1,81 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Cárnico</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        textarea { width: 100%; height: 100px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-save { background: #27ae60; }
-        .btn-clear { background: #e74c3c; }
-        .btn-print { background: #2980b9; }
-    </style>
-</head>
-<body>
-
-<div class="box">
-    <h2>🥩 Gestión Comercial</h2>
-    
-    <h3>📦 Base de Productos</h3>
-    <textarea id="data-prod" placeholder="Formato: Nombre,Formato,Precio,Peso"></textarea>
-    <button class="btn-save" onclick="guardar('prod', 'data-prod')">💾 Guardar Productos</button>
-    <button class="btn-clear" onclick="borrar('prod')">🗑️ Borrar Todos los Productos</button>
-
-    <hr style="margin: 20px 0;">
-
-    <h3>👥 Base de Clientes</h3>
-    <textarea id="data-cli" placeholder="Formato: Nombre,Dirección"></textarea>
-    <button class="btn-save" onclick="guardar('cli', 'data-cli')">💾 Guardar Clientes</button>
-    <button class="btn-clear" onclick="borrar('cli')">🗑️ Borrar Todos los Clientes</button>
-
-    <hr style="margin: 20px 0;">
-    <button class="btn-print" onclick="window.print()">🖨️ Generar PDF / Imprimir</button>
-</div>
-
 <script>
-    // Cargar datos al abrir
-    window.onload = () => {
-        document.getElementById('data-prod').value = localStorage.getItem('prod') || "";
-        document.getElementById('data-cli').value = localStorage.getItem('cli') || "";
-    };
+    // ... (Mantén las variables iniciales igual) ...
 
-    function guardar(key, textareaId) {
-        const val = document.getElementById(textareaId).value;
-        localStorage.setItem(key, val);
-        alert("Datos guardados correctamente.");
+    // --- LÓGICA DE PEDIDOS: PRECIO ÚNICO POR PRODUCTO ---
+    function guardarPedidoEnCalendario() {
+        const fecha = document.getElementById('ped-fecha').value;
+        const cliIdx = document.getElementById('ped-cliente').value;
+        if(cliIdx === "" || !fecha) return alert("Selecciona fecha y cliente.");
+        
+        const clientes = JSON.parse(localStorage.getItem('clientes'));
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        const clienteSel = clientes[cliIdx];
+        
+        let itemsPedido = [];
+        let totalPedido = 0;
+
+        document.querySelectorAll('.product-row').forEach(f => {
+            const idx = f.getAttribute('data-index');
+            const cant = parseFloat(f.querySelector('.ped-cant').value);
+            
+            // LÓGICA: El precio se coge siempre del catálogo (precio base)
+            const precioBase = productos[idx].precio; 
+            
+            if(cant > 0) {
+                const sub = cant * precioBase;
+                totalPedido += sub;
+                itemsPedido.push({ 
+                    nombre: productos[idx].nombre, 
+                    unit: productos[idx].unidad, 
+                    cantidad: cant, 
+                    precio: precioBase, // Se usa el precio base configurado
+                    subtotal: sub 
+                });
+            }
+        });
+
+        if(itemsPedido.length === 0) return alert("Por favor, introduce al menos una cantidad.");
+        
+        const historial = JSON.parse(localStorage.getItem('historial_pedidos'));
+        historial.push({ 
+            fecha: fecha, 
+            clienteNombre: clienteSel.nombre, 
+            clienteDireccion: clienteSel.direccion, 
+            items: itemsPedido, 
+            total: totalPedido 
+        });
+        
+        localStorage.setItem('historial_pedidos', JSON.stringify(historial));
+        alert("Pedido guardado con éxito.");
+        cargarDatosEnPedido();
     }
 
-    function borrar(key) {
-        if(confirm("¿Estás seguro de que quieres borrar todos los datos de " + key + "?")) {
-            localStorage.removeItem(key);
-            document.getElementById('data-' + key).value = "";
-            alert("Borrado realizado.");
-        }
+    // --- ACTUALIZACIÓN DE IMPORTACIÓN PARA PRODUCTOS ---
+    function procesarImportacionProductos() {
+        const texto = document.getElementById('txt-import-productos').value.trim();
+        if(!texto) return alert("Pega algo primero.");
+        const lineas = texto.split('\n');
+        const productos = JSON.parse(localStorage.getItem('productos'));
+        let cont = 0;
+        lineas.forEach(l => {
+            const partes = l.split(',');
+            if(partes.length >= 3) {
+                const precioNum = parseFloat(partes[2].trim());
+                // Importamos manteniendo la unidad (Kilos/Cajas/Uds) pero asumiendo que el precio es por la unidad de referencia
+                productos.push({ 
+                    nombre: partes[0].trim(), 
+                    unidad: partes[1].trim(), 
+                    precio: isNaN(precioNum) ? 0 : precioNum 
+                });
+                cont++;
+            }
+        });
+        localStorage.setItem('productos', JSON.stringify(productos));
+        document.getElementById('txt-import-productos').value = '';
+        toggleImportBox('import-productos');
+        mostrarProductos();
+        alert("Importados " + cont + " productos. El precio configurado se aplicará a todas las ventas de este producto.");
     }
+
+    // ... (El resto de funciones como mostrarClientes, mostrarProductos, etc., se quedan igual) ...
 </script>
-</body>
-</html>
