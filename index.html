@@ -1,127 +1,587 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión - Vicente Aragón</title>
-    <style>
-        /* Diseño Moderno y Limpio */
-        :root {
-            --primario: #2c3e50;
-            --secundario: #16a085;
-            --fondo: #ecf0f1;
-            --texto: #34495e;
-        }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--fondo); color: var(--texto); }
-        
-        /* Barra Superior / Menú */
-        .header { background-color: var(--primario); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { margin: 0; font-size: 1.5rem; }
-        .nav-tabs { display: flex; gap: 10px; }
-        .tab-btn { background: none; border: none; color: #bdc3c7; padding: 10px 20px; font-size: 1rem; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
-        .tab-btn:hover { color: white; }
-        .tab-btn.active { color: white; border-bottom: 3px solid var(--secundario); font-weight: bold; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión Comercial - Vicente Aragón</title>
 
-        /* Contenedor Principal */
-        .container { max-width: 1000px; margin: 30px auto; padding: 20px; }
-        .panel { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
-        .panel.active { display: block; }
+<style>
+:root{
+    --primario:#2c3e50;
+    --secundario:#16a085;
+    --fondo:#ecf0f1;
+}
 
-        /* Buscador de Clientes */
-        .search-container { position: relative; margin-bottom: 20px; }
-        .search-input { width: 100%; padding: 12px 20px; font-size: 1rem; border: 2px solid #bdc3c7; border-radius: 25px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        .search-input:focus { border-color: var(--secundario); }
+*{
+    box-sizing:border-box;
+}
 
-        /* Listas y Tarjetas */
-        ul { list-style: none; padding: 0; margin: 0; }
-        .item-lista { background: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid var(--secundario); display: flex; justify-content: space-between; }
-        
-        /* Botones de acción */
-        .btn-accion { background-color: var(--secundario); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-        .btn-accion:hover { opacity: 0.9; }
-    </style>
+body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    background:var(--fondo);
+}
+
+header{
+    background:var(--primario);
+    color:white;
+    padding:15px;
+}
+
+header h1{
+    margin:0;
+}
+
+nav{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+
+nav button{
+    padding:10px;
+    border:none;
+    cursor:pointer;
+    border-radius:5px;
+}
+
+.container{
+    padding:20px;
+    max-width:1200px;
+    margin:auto;
+}
+
+.panel{
+    display:none;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+
+.panel.active{
+    display:block;
+}
+
+input, select{
+    width:100%;
+    padding:10px;
+    margin-bottom:10px;
+}
+
+button{
+    padding:10px 15px;
+    cursor:pointer;
+}
+
+.btn{
+    background:var(--secundario);
+    color:white;
+    border:none;
+}
+
+.btn-danger{
+    background:#c0392b;
+    color:white;
+    border:none;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+table th,
+table td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+.total{
+    font-size:20px;
+    font-weight:bold;
+    margin-top:15px;
+}
+</style>
 </head>
 <body>
 
-    <!-- MENÚ SUPERIOR -->
-    <header class="header">
-        <h1>Vicente Aragón S.L.</h1>
-        <nav class="nav-tabs">
-            <button class="tab-btn active" onclick="cambiarPestana('pedidos')">🛒 Pedidos</button>
-            <button class="tab-btn" onclick="cambiarPestana('clientes')">👥 Clientes</button>
-            <button class="tab-btn" onclick="cambiarPestana('productos')">📦 Productos</button>
-        </nav>
-    </header>
+<header>
+<h1>Vicente Aragón S.L.</h1>
 
-    <div class="container">
-        
-        <!-- SECCIÓN 1: PEDIDOS -->
-        <section id="pedidos" class="panel active">
-            <h2>Panel de Pedidos y Calendario</h2>
-            <p>Organiza aquí las rutas diarias y las entregas pendientes.</p>
-            <button class="btn-accion">📅 Ver Calendario Completo</button>
-        </section>
+<nav>
+<button onclick="mostrar('pedidos')">Pedidos</button>
+<button onclick="mostrar('clientes')">Clientes</button>
+<button onclick="mostrar('productos')">Productos</button>
+</nav>
+</header>
 
-        <!-- SECCIÓN 2: CLIENTES (CON BUSCADOR) -->
-        <section id="clientes" class="panel">
-            <h2>Gestión de Clientes</h2>
-            <div class="search-container">
-                <input type="text" id="buscador" class="search-input" onkeyup="filtrarClientes()" placeholder="🔍 Escribe el nombre o la dirección para buscar...">
-            </div>
-            <ul id="listaClientes">
-                <li class="item-lista">
-                    <span><strong>INES Mª LECHA BELTRAN</strong><br><small>CL MOLINO NUEVO, 3</small></span>
-                </li>
-                <li class="item-lista">
-                    <span><strong>MARIA JESUS RUBIO GRACIA</strong><br><small>CL RIO VILLAHERMOSA, 2</small></span>
-                </li>
-                <li class="item-lista">
-                    <span><strong>SALVADOR M NAVARRO GARCIA</strong><br><small>APEADERO DE BETXI Nº6</small></span>
-                </li>
-                <li class="item-lista">
-                    <span><strong>SERGIO DOMENECH RODRIGUEZ</strong><br><small>POL.IND. CASETA, SN</small></span>
-                </li>
-            </ul>
-        </section>
+<div class="container">
 
-        <!-- SECCIÓN 3: PRODUCTOS -->
-        <section id="productos" class="panel">
-            <h2>Catálogo de Productos</h2>
-            <p>Visualiza y gestiona el stock disponible para las rutas.</p>
-            <ul id="listaProductos">
-                <li class="item-lista">📦 Producto de Ejemplo 1</li>
-                <li class="item-lista">📦 Producto de Ejemplo 2</li>
-            </ul>
-        </section>
+<!-- CLIENTES -->
 
-    </div>
+<div id="clientes" class="panel">
 
-    <!-- LÓGICA DE LA APLICACIÓN -->
-    <script>
-        // Cambiar entre secciones (Pedidos, Clientes, Productos)
-        function cambiarPestana(idSeccion) {
-            // Ocultar todos los paneles
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            // Desactivar todos los botones del menú
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            // Mostrar el panel seleccionado y activar su botón
-            document.getElementById(idSeccion).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
+<h2>Clientes</h2>
 
-        // Sistema de Búsqueda de Clientes
-        function filtrarClientes() {
-            let input = document.getElementById('buscador').value.toLowerCase();
-            let clientes = document.getElementById('listaClientes').getElementsByClassName('item-lista');
+<input id="clienteNombre" placeholder="Nombre">
+<input id="clienteDireccion" placeholder="Dirección">
 
-            for (let i = 0; i < clientes.length; i++) {
-                let textoCliente = clientes[i].innerText.toLowerCase();
-                // Si coincide el buscador con el texto, se queda; si no, se oculta
-                clientes[i].style.display = textoCliente.includes(input) ? "" : "none";
-            }
-        }
-    </script>
+<button class="btn" onclick="agregarCliente()">
+Guardar Cliente
+</button>
+
+<button class="btn-danger" onclick="borrarClientes()">
+Borrar Todos
+</button>
+
+<table>
+<thead>
+<tr>
+<th>Nombre</th>
+<th>Dirección</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="tablaClientes"></tbody>
+</table>
+
+</div>
+
+<!-- PRODUCTOS -->
+
+<div id="productos" class="panel">
+
+<h2>Productos</h2>
+
+<input id="productoNombre" placeholder="Nombre producto">
+
+<input
+id="productoPrecio"
+type="number"
+placeholder="Precio por Kg">
+
+<button class="btn" onclick="agregarProducto()">
+Guardar Producto
+</button>
+
+<button class="btn-danger" onclick="borrarProductos()">
+Borrar Todos
+</button>
+
+<table>
+<thead>
+<tr>
+<th>Producto</th>
+<th>Precio Kg</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="tablaProductos"></tbody>
+</table>
+
+</div>
+
+<!-- PEDIDOS -->
+
+<div id="pedidos" class="panel active">
+
+<h2>Pedidos</h2>
+
+<input type="date" id="pedidoFecha">
+
+<select id="pedidoCliente"></select>
+
+<select id="pedidoProducto"></select>
+
+<input
+type="number"
+id="pedidoKg"
+placeholder="Kilos">
+
+<button class="btn" onclick="agregarLineaPedido()">
+Añadir Producto
+</button>
+
+<table>
+<thead>
+<tr>
+<th>Producto</th>
+<th>Kg</th>
+<th>Precio</th>
+<th>Subtotal</th>
+</tr>
+</thead>
+
+<tbody id="lineasPedido"></tbody>
+
+</table>
+
+<div class="total">
+Total: <span id="totalPedido">0</span> €
+</div>
+
+<br>
+
+<button class="btn" onclick="guardarPedido()">
+Guardar Pedido
+</button>
+
+<h3>Pedidos Guardados</h3>
+
+<table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Cliente</th>
+<th>Total</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody id="tablaPedidos"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+let clientes =
+JSON.parse(localStorage.getItem("clientes")) || [];
+
+let productos =
+JSON.parse(localStorage.getItem("productos")) || [];
+
+let pedidos =
+JSON.parse(localStorage.getItem("pedidos")) || [];
+
+let pedidoActual = [];
+
+function guardarTodo(){
+localStorage.setItem(
+"clientes",
+JSON.stringify(clientes)
+);
+
+localStorage.setItem(
+"productos",
+JSON.stringify(productos)
+);
+
+localStorage.setItem(
+"pedidos",
+JSON.stringify(pedidos)
+);
+}
+
+function mostrar(id){
+
+document
+.querySelectorAll(".panel")
+.forEach(p=>p.classList.remove("active"));
+
+document
+.getElementById(id)
+.classList.add("active");
+}
+
+function agregarCliente(){
+
+const nombre =
+document.getElementById("clienteNombre").value;
+
+const direccion =
+document.getElementById("clienteDireccion").value;
+
+if(!nombre || !direccion) return;
+
+clientes.push({
+nombre,
+direccion
+});
+
+guardarTodo();
+renderClientes();
+
+document.getElementById("clienteNombre").value="";
+document.getElementById("clienteDireccion").value="";
+}
+
+function renderClientes(){
+
+const tabla =
+document.getElementById("tablaClientes");
+
+tabla.innerHTML="";
+
+clientes.forEach((c,i)=>{
+
+tabla.innerHTML+=`
+<tr>
+<td>${c.nombre}</td>
+<td>${c.direccion}</td>
+<td>
+<button class="btn-danger"
+onclick="eliminarCliente(${i})">
+X
+</button>
+</td>
+</tr>
+`;
+});
+
+actualizarSelectClientes();
+}
+
+function eliminarCliente(i){
+
+clientes.splice(i,1);
+
+guardarTodo();
+renderClientes();
+}
+
+function borrarClientes(){
+
+if(!confirm("Borrar todos?")) return;
+
+clientes=[];
+
+guardarTodo();
+renderClientes();
+}
+
+function agregarProducto(){
+
+const nombre =
+document.getElementById("productoNombre").value;
+
+const precio =
+parseFloat(
+document.getElementById("productoPrecio").value
+);
+
+if(!nombre || !precio) return;
+
+productos.push({
+nombre,
+precio
+});
+
+guardarTodo();
+renderProductos();
+
+document.getElementById("productoNombre").value="";
+document.getElementById("productoPrecio").value="";
+}
+
+function renderProductos(){
+
+const tabla =
+document.getElementById("tablaProductos");
+
+tabla.innerHTML="";
+
+productos.forEach((p,i)=>{
+
+tabla.innerHTML+=`
+<tr>
+<td>${p.nombre}</td>
+<td>${p.precio} €</td>
+<td>
+<button class="btn-danger"
+onclick="eliminarProducto(${i})">
+X
+</button>
+</td>
+</tr>
+`;
+});
+
+actualizarSelectProductos();
+}
+
+function eliminarProducto(i){
+
+productos.splice(i,1);
+
+guardarTodo();
+renderProductos();
+}
+
+function borrarProductos(){
+
+if(!confirm("Borrar todos?")) return;
+
+productos=[];
+
+guardarTodo();
+renderProductos();
+}
+
+function actualizarSelectClientes(){
+
+const s =
+document.getElementById("pedidoCliente");
+
+s.innerHTML="";
+
+clientes.forEach((c,i)=>{
+
+s.innerHTML += `
+<option value="${i}">
+${c.nombre}
+</option>
+`;
+});
+}
+
+function actualizarSelectProductos(){
+
+const s =
+document.getElementById("pedidoProducto");
+
+s.innerHTML="";
+
+productos.forEach((p,i)=>{
+
+s.innerHTML += `
+<option value="${i}">
+${p.nombre}
+</option>
+`;
+});
+}
+
+function agregarLineaPedido(){
+
+const producto =
+productos[
+document.getElementById("pedidoProducto").value
+];
+
+const kg =
+parseFloat(
+document.getElementById("pedidoKg").value
+);
+
+if(!producto || !kg) return;
+
+pedidoActual.push({
+producto:producto.nombre,
+precio:producto.precio,
+kg,
+subtotal:producto.precio*kg
+});
+
+renderPedidoActual();
+}
+
+function renderPedidoActual(){
+
+const tabla =
+document.getElementById("lineasPedido");
+
+tabla.innerHTML="";
+
+let total=0;
+
+pedidoActual.forEach(l=>{
+
+total+=l.subtotal;
+
+tabla.innerHTML+=`
+<tr>
+<td>${l.producto}</td>
+<td>${l.kg}</td>
+<td>${l.precio}</td>
+<td>${l.subtotal.toFixed(2)}</td>
+</tr>
+`;
+});
+
+document.getElementById("totalPedido")
+.textContent = total.toFixed(2);
+}
+
+function guardarPedido(){
+
+const fecha =
+document.getElementById("pedidoFecha").value;
+
+const cliente =
+clientes[
+document.getElementById("pedidoCliente").value
+];
+
+if(!fecha || !cliente || pedidoActual.length===0){
+alert("Completa los datos");
+return;
+}
+
+const total =
+pedidoActual.reduce(
+(a,b)=>a+b.subtotal,
+0
+);
+
+pedidos.push({
+fecha,
+cliente:cliente.nombre,
+lineas:[...pedidoActual],
+total
+});
+
+pedidoActual=[];
+
+guardarTodo();
+renderPedidoActual();
+renderPedidos();
+
+alert("Pedido guardado");
+}
+
+function renderPedidos(){
+
+const tabla =
+document.getElementById("tablaPedidos");
+
+tabla.innerHTML="";
+
+pedidos.forEach((p,i)=>{
+
+tabla.innerHTML+=`
+<tr>
+<td>${p.fecha}</td>
+<td>${p.cliente}</td>
+<td>${p.total.toFixed(2)} €</td>
+<td>
+<button class="btn-danger"
+onclick="eliminarPedido(${i})">
+X
+</button>
+</td>
+</tr>
+`;
+});
+}
+
+function eliminarPedido(i){
+
+pedidos.splice(i,1);
+
+guardarTodo();
+renderPedidos();
+}
+
+renderClientes();
+renderProductos();
+renderPedidos();
+
+</script>
 
 </body>
 </html>
