@@ -2,44 +2,62 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Pedidos y Clientes</title>
+    <title>App Gestión Vicente Aragón</title>
     <style>
-        /* Estilos básicos para mantener tu diseño */
-        body { font-family: sans-serif; padding: 20px; }
-        .menu { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn { padding: 10px 20px; background: #ddd; text-decoration: none; color: black; border-radius: 5px; }
-        .active { background: #900; color: white; }
-        #busqueda { width: 100%; padding: 12px; margin-bottom: 20px; font-size: 16px; }
-        .cliente-item { padding: 8px; border-bottom: 1px solid #ccc; }
+        body { font-family: sans-serif; margin: 0; padding: 20px; }
+        .menu { display: flex; gap: 10px; margin-bottom: 20px; background: #f4f4f4; padding: 10px; }
+        .btn { padding: 10px 20px; cursor: pointer; border: none; background: #ddd; }
+        .btn.active { background: #900; color: white; }
+        .seccion { display: none; }
+        .seccion.active { display: block; }
+        #busqueda { width: 100%; padding: 12px; margin-bottom: 20px; box-sizing: border-box; }
+        .cliente-item { padding: 10px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
-    <!-- Tu Menú -->
     <div class="menu">
-        <a href="#" class="btn active">Pedidos</a>
-        <a href="#" class="btn">Clientes</a>
-        <a href="#" class="btn">Productos</a>
+        <button class="btn active" onclick="mostrarSeccion('pedidos')">Pedidos</button>
+        <button class="btn" onclick="mostrarSeccion('clientes')">Clientes</button>
+        <button class="btn" onclick="mostrarSeccion('productos')">Productos</button>
     </div>
 
-    <h1>Panel de Pedidos</h1>
-    
-    <!-- BARRA DE BÚSQUEDA AÑADIDA -->
-    <input type="text" id="busqueda" onkeyup="filtrarLista()" placeholder="🔍 Buscar cliente...">
+    <div id="pedidos" class="seccion active">
+        <h1>Panel de Pedidos</h1>
+        <p>Aquí irá tu calendario y gestión de pedidos.</p>
+    </div>
 
-    <ul id="listaClientes">
-        <li class="cliente-item">INES Mª LECHA BELTRAN, CL MOLINO NUEVO, 3</li>
-        <li class="cliente-item">MARIA JESUS RUBIO GRACIA, CL RIO VILLAHERMOSA, 2</li>
-        <!-- Añade aquí el resto de tus clientes -->
-    </ul>
+    <div id="clientes" class="seccion">
+        <h1>Listado de Clientes</h1>
+        <input type="text" id="busqueda" onkeyup="filtrarLista()" placeholder="🔍 Escribe para buscar cliente...">
+        <ul id="listaClientes">
+            <li class="cliente-item">INES Mª LECHA BELTRAN, CL MOLINO NUEVO, 3</li>
+            <li class="cliente-item">MARIA JESUS RUBIO GRACIA, CL RIO VILLAHERMOSA, 2</li>
+            <li class="cliente-item">SALVADOR M NAVARRO GARCIA, APEADERO DE BETXI Nº6</li>
+            <li class="cliente-item">SERGIO DOMENECH RODRIGUEZ, POL.IND. CASETA, SN</li>
+            </ul>
+    </div>
+
+    <div id="productos" class="seccion">
+        <h1>Catálogo de Productos</h1>
+        <p>Aquí irá tu lista de productos.</p>
+    </div>
 
     <script>
+        // Función para cambiar de pestaña
+        function mostrarSeccion(id) {
+            document.querySelectorAll('.seccion').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Función para filtrar clientes
         function filtrarLista() {
             let input = document.getElementById('busqueda').value.toLowerCase();
-            let lista = document.getElementById('listaClientes').getElementsByTagName('li');
-            for (let i = 0; i < lista.length; i++) {
-                let texto = lista[i].innerText.toLowerCase();
-                lista[i].style.display = texto.includes(input) ? "" : "none";
+            let items = document.getElementsByClassName('cliente-item');
+            for (let i = 0; i < items.length; i++) {
+                items[i].style.display = items[i].innerText.toLowerCase().includes(input) ? "" : "none";
             }
         }
     </script>
