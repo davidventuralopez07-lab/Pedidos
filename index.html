@@ -2,98 +2,19 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Comercial Completo</title>
+    <title>Pedidos</title>
     <style>
-        :root { --primary: #8b0000; }
-        body { font-family: sans-serif; background: #eee; padding: 10px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 15px; border-radius: 10px; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: #ddd; cursor: pointer; border-radius: 5px; font-weight: bold; }
-        .tab-btn.active { background: var(--primary); color: white; }
-        .panel { display: none; } .panel.active { display: block; }
-        textarea { width: 100%; height: 80px; margin: 10px 0; }
-        .btn { width: 100%; padding: 10px; border: none; color: white; cursor: pointer; border-radius: 5px; margin-top: 5px; font-weight: bold; }
-        .btn-green { background: #27ae60; }
-        .btn-red { background: #e74c3c; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        body { font-family: sans-serif; padding: 20px; }
+        .contenedor { max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+        .boton-imprimir { background-color: #28a745; color: white; padding: 15px; text-align: center; display: block; border-radius: 5px; text-decoration: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="tabs">
-        <button class="tab-btn active" onclick="show('pedidos')">🛒 Pedidos</button>
-        <button class="tab-btn" onclick="show('clientes')">👥 Clientes</button>
-        <button class="tab-btn" onclick="show('productos')">📦 Productos</button>
-    </div>
-
-    <div id="panel-pedidos" class="panel active">
-        <h3>Panel de Pedidos</h3>
-        <button class="btn btn-green" onclick="window.print()">🖨️ Imprimir Pedido</button>
-    </div>
-
-    <div id="panel-clientes" class="panel">
-        <h3>👥 Gestión de Clientes</h3>
-        <textarea id="data-cli" placeholder="Nombre,Dirección"></textarea>
-        <button class="btn btn-green" onclick="importar('clientes')">⚡ Importar/Guardar</button>
-        <button class="btn btn-red" onclick="borrarTodo('clientes')">🗑️ BORRAR TODOS</button>
-        <table id="tabla-cli"><thead><tr><th>Nombre</th><th>Acción</th></tr></thead><tbody></tbody></table>
-    </div>
-
-    <div id="panel-productos" class="panel">
-        <h3>📦 Gestión de Productos</h3>
-        <textarea id="data-prod" placeholder="Nombre,Formato,Precio"></textarea>
-        <button class="btn btn-green" onclick="importar('productos')">⚡ Importar/Guardar</button>
-        <button class="btn btn-red" onclick="borrarTodo('productos')">🗑️ BORRAR TODOS</button>
-        <table id="tabla-prod"><thead><tr><th>Nombre</th><th>Acción</th></tr></thead><tbody></tbody></table>
-    </div>
+<div class="contenedor">
+    <h1>Panel de Pedidos</h1>
+    <a href="#" class="boton-imprimir">Imprimir Pedido</a>
 </div>
 
-<script>
-    function show(id) {
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.getElementById('panel-'+id).classList.add('active');
-    }
-
-    function importar(key) {
-        const input = document.getElementById(key === 'productos' ? 'data-prod' : 'data-cli').value;
-        const lineas = input.split('\n');
-        let lista = JSON.parse(localStorage.getItem(key) || "[]");
-        
-        lineas.forEach(l => { if(l.trim()) lista.push(l.trim()); });
-        localStorage.setItem(key, JSON.stringify(lista));
-        renderizar();
-        alert("Importado correctamente.");
-    }
-
-    function borrarIndividual(key, index) {
-        let lista = JSON.parse(localStorage.getItem(key));
-        lista.splice(index, 1);
-        localStorage.setItem(key, JSON.stringify(lista));
-        renderizar();
-    }
-
-    function borrarTodo(key) {
-        if(confirm("¿Seguro que quieres borrar TODO?")) {
-            localStorage.removeItem(key);
-            renderizar();
-        }
-    }
-
-    function renderizar() {
-        ['clientes', 'productos'].forEach(key => {
-            const tbody = document.querySelector('#tabla-' + (key === 'productos' ? 'prod' : 'cli') + ' tbody');
-            tbody.innerHTML = '';
-            const lista = JSON.parse(localStorage.getItem(key) || "[]");
-            lista.forEach((item, index) => {
-                tbody.innerHTML += `<tr><td>${item}</td><td><button onclick="borrarIndividual('${key}', ${index})">❌</button></td></tr>`;
-            });
-        });
-    }
-
-    window.onload = renderizar;
-</script>
 </body>
 </html>
