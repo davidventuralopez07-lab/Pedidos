@@ -97,3 +97,16 @@
 </script>
 </body>
 </html>
+function filtrarLista() {
+    let input = document.getElementById('busqueda').value.toLowerCase();
+    let lista = document.getElementsByClassName('elemento-lista');
+
+    for (let i = 0; i < lista.length; i++) {
+        let texto = lista[i].innerText.toLowerCase();
+        if (texto.includes(input)) {
+            lista[i].style.display = ""; // Lo muestra
+        } else {
+            lista[i].style.display = "none"; // Lo oculta
+        }
+    }
+}
